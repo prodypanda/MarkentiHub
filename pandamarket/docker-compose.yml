@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pd_postgres
+    environment:
+      POSTGRES_DB: pandamarket
+      POSTGRES_USER: pd_user
+      POSTGRES_PASSWORD: pd_dev_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pd_user -d pandamarket"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: pd_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.8
+    container_name: pd_meilisearch
+    environment:
+      MEILI_MASTER_KEY: pd_meili_master_dev_key_2026
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: pd_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: pd_minio_admin
+      MINIO_ROOT_PASSWORD: pd_minio_secret_2026
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # MinIO bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    container_name: pd_minio_init
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 pd_minio_admin pd_minio_secret_2026;
+      mc mb --ignore-existing local/pd-product-images;
+      mc mb --ignore-existing local/pd-private-files;
+      mc mb --ignore-existing local/pd-themes;
+      mc anonymous set public local/pd-product-images;
+      mc anonymous set public local/pd-themes;
+      echo 'MinIO buckets initialized successfully';
+      "
+
+volumes:
+  pg_data:
+    driver: local
+  redis_data:
+    driver: local
+  meili_data:
+    driver: local
+  minio_data:
+    driver: local

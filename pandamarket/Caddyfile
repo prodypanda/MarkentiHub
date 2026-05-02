@@ -1,0 +1,57 @@
+# pandamarket/Caddyfile
+# =============================================================================
+# PandaMarket — Caddy Reverse Proxy Configuration
+# Handles wildcard SSL, multi-tenant routing, and custom domains
+# =============================================================================
+
+# Hub Central
+pandamarket.tn, www.pandamarket.tn {
+  reverse_proxy localhost:3000
+  encode gzip zstd
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    X-XSS-Protection "1; mode=block"
+    Referrer-Policy strict-origin-when-cross-origin
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  }
+}
+
+# API
+api.pandamarket.tn {
+  reverse_proxy localhost:9000
+  encode gzip zstd
+}
+
+# Admin Panel
+admin.pandamarket.tn {
+  reverse_proxy localhost:3000
+  encode gzip zstd
+}
+
+# Search (Meilisearch — internal only, proxy through API)
+search.pandamarket.tn {
+  reverse_proxy localhost:7700
+  encode gzip zstd
+  # Restrict to internal network in production
+}
+
+# Vendor Storefronts — Wildcard subdomains
+*.pandamarket.tn {
+  reverse_proxy localhost:3000
+  encode gzip zstd
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options SAMEORIGIN
+    X-XSS-Protection "1; mode=block"
+  }
+}
+
+# Custom Domains — On-demand TLS
+:443 {
+  tls {
+    on_demand
+  }
+  reverse_proxy localhost:3000
+  encode gzip zstd
+}

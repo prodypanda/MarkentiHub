@@ -1,0 +1,114 @@
+// @ts-nocheck
+import { AbstractPaymentProvider } from '@medusajs/framework/utils';
+import { PaymentProviderError, PaymentProviderSessionResponse, ProviderWebhookPayload } from '@medusajs/framework/types';
+
+export class KonnectPaymentProvider extends AbstractPaymentProvider<any> {
+  static identifier = 'pd-konnect';
+
+  constructor(container: any, options: any) {
+    super(container, options);
+  }
+
+  private async createKonnectPayment(amount: number, orderId: string, isDirect: boolean, vendorKeys?: { api_key: string }) {
+    const apiKey = isDirect && vendorKeys ? vendorKeys.api_key : process.env.KONNECT_API_KEY;
+    
+    // Call Konnect Init Payment API
+    // https://api.konnect.network/api/v2/payments/init-payment
+    try {
+      const response = await fetch('https://api.konnect.network/api/v2/payments/init-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey || '',
+        },
+        body: JSON.stringify({
+          receiverWalletId: isDirect ? vendorKeys?.api_key : process.env.KONNECT_WALLET_ID, // Use real wallet ID mapping
+          token: "TND",
+          amount: amount * 1000, 
+          type: "immediate",
+          description: `PandaMarket Order ${orderId}`,
+          acceptedPaymentMethods: ["bank_card", "e-DINAR"],
+          successUrl: `${process.env.PD_STORE_CORS}/checkout/success?order_id=${orderId}`,
+          failUrl: `${process.env.PD_STORE_CORS}/checkout/fail?order_id=${orderId}`,
+          theme: "light"
+        })
+      });
+
+      const data = await response.json();
+      if (!data.payUrl) {
+        throw new Error('Failed to generate Konnect payment');
+      }
+
+      return data;
+    } catch (e) {
+      console.error('Konnect Error', e);
+      throw e;
+    }
+  }
+
+  async initiatePayment(context: any): Promise<PaymentProviderSessionResponse> {
+    const amount = context.amount;
+    const orderId = context.resource_id || 'temp_' + Date.now();
+    
+    // Mocking the call since we might not have real keys during development
+    let konnectSession = { payUrl: 'https://api.konnect.network/pay/mock', paymentRef: 'mock_ref' };
+    
+    if (process.env.KONNECT_API_KEY) {
+      konnectSession = await this.createKonnectPayment(amount, orderId, false);
+    }
+
+    return {
+      session_data: {
+        payment_id: konnectSession.paymentRef,
+        link: konnectSession.payUrl,
+        status: 'pending',
+      },
+    };
+  }
+
+  async authorizePayment(paymentSessionData: Record<string, unknown>, context: Record<string, unknown>): Promise<{ data: Record<string, unknown>; status: "authorized" | "error" | "requires_more" | "pending" | "canceled" }> {
+    return {
+      data: paymentSessionData,
+      status: 'authorized', 
+    };
+  }
+
+  async cancelPayment(paymentSessionData: Record<string, unknown>): Promise<Record<string, unknown> | PaymentProviderError> {
+    return {
+      ...paymentSessionData,
+      status: 'canceled',
+    };
+  }
+
+  async capturePayment(paymentSessionData: Record<string, unknown>): Promise<Record<string, unknown> | PaymentProviderError> {
+    return {
+      ...paymentSessionData,
+      status: 'captured',
+    };
+  }
+
+  async deletePayment(paymentSessionData: Record<string, unknown>): Promise<Record<string, unknown> | PaymentProviderError> {
+    return paymentSessionData;
+  }
+
+  async getPaymentStatus(paymentSessionData: Record<string, unknown>): Promise<"authorized" | "error" | "requires_more" | "pending" | "canceled" | "captured"> {
+    return paymentSessionData.status as any || 'pending';
+  }
+
+  async refundPayment(paymentSessionData: Record<string, unknown>, refundAmount: number): Promise<Record<string, unknown> | PaymentProviderError> {
+    return paymentSessionData;
+  }
+
+  async updatePayment(context: any): Promise<PaymentProviderSessionResponse> {
+    return {
+      session_data: context.session_data,
+    };
+  }
+
+  async getWebhookActionAndData(payload: ProviderWebhookPayload): Promise<{ action: "successful" | "failed" | "authorized" | "captured" | "not_supported"; data: Record<string, unknown> }> {
+    return {
+      action: 'authorized',
+      data: payload.data.payload as Record<string, unknown>,
+    };
+  }
+}

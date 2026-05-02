@@ -1,0 +1,247 @@
+/* pandamarket/frontend/src/styles/globals.css */
+/* =============================================================================
+   PandaMarket — Design System
+   Colors, Typography, Spacing, Animations, Components
+   Based on design-system.md
+   ============================================================================= */
+
+/* ─────────────────────────── Google Fonts ─────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ─────────────────────────── CSS Custom Properties ─────────────────── */
+:root {
+  /* ── Colors ── */
+  --pd-green: #16C784;
+  --pd-green-light: #1de69a;
+  --pd-green-dark: #12a56d;
+  --pd-green-bg: rgba(22, 199, 132, 0.08);
+  --pd-green-border: rgba(22, 199, 132, 0.25);
+
+  --pd-red: #EA3943;
+  --pd-red-light: #ff5c65;
+  --pd-red-bg: rgba(234, 57, 67, 0.08);
+
+  --pd-yellow: #F5A623;
+  --pd-yellow-bg: rgba(245, 166, 35, 0.08);
+
+  --pd-blue: #3B82F6;
+  --pd-blue-bg: rgba(59, 130, 246, 0.08);
+
+  /* ── Light mode ── */
+  --pd-bg-primary: #F8F9FC;
+  --pd-bg-secondary: #FFFFFF;
+  --pd-bg-tertiary: #F0F2F5;
+  --pd-text-primary: #1A1A2E;
+  --pd-text-secondary: #6B7280;
+  --pd-text-tertiary: #9CA3AF;
+  --pd-border: #E5E7EB;
+  --pd-border-hover: #D1D5DB;
+  --pd-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --pd-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --pd-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.04);
+  --pd-shadow-green: 0 4px 14px rgba(22, 199, 132, 0.25);
+
+  /* ── Typography ── */
+  --pd-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pd-fs-xs: 0.75rem;     /* 12px */
+  --pd-fs-sm: 0.875rem;    /* 14px */
+  --pd-fs-base: 1rem;      /* 16px */
+  --pd-fs-lg: 1.125rem;    /* 18px */
+  --pd-fs-xl: 1.25rem;     /* 20px */
+  --pd-fs-2xl: 1.5rem;     /* 24px */
+  --pd-fs-3xl: 1.875rem;   /* 30px */
+  --pd-fs-4xl: 2.25rem;    /* 36px */
+  --pd-fs-5xl: 3rem;       /* 48px */
+
+  /* ── Spacing ── */
+  --pd-sp-1: 0.25rem;  /* 4px */
+  --pd-sp-2: 0.5rem;   /* 8px */
+  --pd-sp-3: 0.75rem;  /* 12px */
+  --pd-sp-4: 1rem;     /* 16px */
+  --pd-sp-5: 1.25rem;  /* 20px */
+  --pd-sp-6: 1.5rem;   /* 24px */
+  --pd-sp-8: 2rem;     /* 32px */
+  --pd-sp-10: 2.5rem;  /* 40px */
+  --pd-sp-12: 3rem;    /* 48px */
+  --pd-sp-16: 4rem;    /* 64px */
+
+  /* ── Radii ── */
+  --pd-radius-sm: 6px;
+  --pd-radius-md: 8px;
+  --pd-radius-lg: 12px;
+  --pd-radius-xl: 16px;
+  --pd-radius-full: 9999px;
+
+  /* ── Transitions ── */
+  --pd-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --pd-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --pd-transition-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Z-Index Scale ── */
+  --pd-z-dropdown: 100;
+  --pd-z-sticky: 200;
+  --pd-z-modal-backdrop: 300;
+  --pd-z-modal: 400;
+  --pd-z-toast: 500;
+}
+
+/* ─────────────────────────── Dark Mode ────────────────────────────── */
+[data-theme='dark'],
+.dark {
+  --pd-bg-primary: #0F0F1A;
+  --pd-bg-secondary: #1A1A2E;
+  --pd-bg-tertiary: #16162B;
+  --pd-text-primary: #F8F9FC;
+  --pd-text-secondary: #9CA3AF;
+  --pd-text-tertiary: #6B7280;
+  --pd-border: #2D2D44;
+  --pd-border-hover: #3D3D5C;
+  --pd-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --pd-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
+  --pd-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+/* ─────────────────────────── Reset & Base ─────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--pd-font);
+  font-size: var(--pd-fs-base);
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--pd-text-primary);
+  background-color: var(--pd-bg-primary);
+  transition: background-color var(--pd-transition), color var(--pd-transition);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ─────────────────────────── Animations ──────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes badgePulse {
+  0% { box-shadow: 0 0 0 0 rgba(234, 57, 67, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(234, 57, 67, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 57, 67, 0); }
+}
+
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out; }
+.animate-slide-in-down { animation: slideInDown 0.3s ease-out; }
+.animate-scale-in { animation: scaleIn 0.2s ease-out; }
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--pd-bg-tertiary) 25%, var(--pd-border) 50%, var(--pd-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-badge-pulse { animation: badgePulse 2s infinite; }
+
+/* ─────────────────────────── Breakpoints ─────────────────────────── */
+/* Mobile-first: xs < 640px, sm >= 640px, md >= 768px, lg >= 1024px, xl >= 1280px, 2xl >= 1536px */
+
+/* ─────────────────────────── Scrollbar ───────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--pd-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--pd-border);
+  border-radius: var(--pd-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pd-text-tertiary);
+}
+
+/* ─────────────────────────── Selection ───────────────────────────── */
+::selection {
+  background-color: var(--pd-green);
+  color: white;
+}
+
+/* ─────────────────────────── Focus Ring ──────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--pd-green);
+  outline-offset: 2px;
+  border-radius: var(--pd-radius-sm);
+}
