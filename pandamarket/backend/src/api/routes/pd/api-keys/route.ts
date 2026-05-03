@@ -8,15 +8,10 @@ export const GET = async (
   res: MedusaResponse,
 ) => {
   const storeId = (req as any).pd_store_id as string;
-  if (!storeId) {
-    // For local dev without auth middleware, mock a store id
-    // throw new PdForbiddenError();
-  }
-
-  const activeStoreId = storeId || 'store_123';
+  if (!storeId) throw new PdForbiddenError();
   const apiKeyService = req.scope.resolve('pdApiKeyService');
   
-  const keys = await apiKeyService.listKeysForStore(activeStoreId);
+  const keys = await apiKeyService.listKeysForStore(storeId);
   
   // Omit key_hash from response
   const sanitizedKeys = keys.map((k: any) => {
@@ -31,7 +26,8 @@ export const POST = async (
   req: MedusaRequest,
   res: MedusaResponse,
 ) => {
-  const storeId = (req as any).pd_store_id as string || 'store_123';
+  const storeId = (req as any).pd_store_id as string;
+  if (!storeId) throw new PdForbiddenError();
   
   const schema = z.object({
     label: z.string().min(1),

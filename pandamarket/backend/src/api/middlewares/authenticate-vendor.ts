@@ -17,7 +17,12 @@ export const authenticateVendor = async (
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as any;
+    const jwtSecret = process.env.PD_JWT_SECRET;
+    if (!jwtSecret) {
+      return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'JWT secret is not configured'));
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as any;
     
     // Inject vendor context
     if (!decoded.store_id) {

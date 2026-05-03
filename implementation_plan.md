@@ -5,6 +5,12 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 > [!IMPORTANT]
 > PandaMarket est une plateforme hybride MaaS (Marketplace as a Service) et SaaS (Storefront Builder) ciblant le marché tunisien.
 
+## 0. Résultat de l'audit (03/05/2026)
+
+- [ ] Application **non finalisée**: plusieurs fonctionnalités P0/P1 sont partiellement implémentées ou en mode placeholder.
+- [ ] Application **non totalement sécurisée**: fallbacks de sécurité et contrôles d'accès incomplets identifiés sur des routes critiques.
+- [x] Base technique globale en place (modules principaux backend/frontend présents).
+
 ## 1. État de l'Audit (Checklist des Fonctionnalités)
 
 ### Core Backend (MedusaJS v2)
@@ -23,6 +29,7 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 - [x] Système de thèmes basé sur des variables CSS (`theme-minimal`, `theme-classic`, etc.)
 - [x] Intégration GrapesJS pour le Page Builder (SaaS mode)
 - [x] Dashboard Vendeur complet (Produits, Commandes, Paramètres, Wallet, KYC, IA)
+- [ ] Authentification frontend connectée au backend (`/login`, `/register` encore en TODO)
 - [ ] Support complet des domaines personnalisés (Caddy est configuré mais nécessite test de bout en bout)
 
 ### Paiements & Logistique
@@ -46,7 +53,7 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 ## 2. Audit de Sécurité
 
 ### Authentification & Autorisation
-- [x] Utilisation de JWT pour toutes les API
+- [ ] Utilisation de JWT pour toutes les API (incohérences détectées sur certains endpoints)
 - [x] Isolation stricte des données vendeurs (`store_id` enforcement)
 - [x] Rôles RBAC (Customer, Vendor, Admin, Super Admin)
 - [x] Hashage des mots de passe avec bcrypt (12 rounds)
@@ -56,16 +63,22 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 - [x] Chiffrement symétrique des clés API vendeurs (Flouci/Konnect) via AES-256-GCM
 - [x] Stockage sécurisé des documents KYC (Presigned URLs S3)
 - [x] Headers de sécurité configurés (Helmet, CSP, XSS protection)
-- [x] Rate limiting actif via Redis sur tous les endpoints critiques
+- [ ] Rate limiting actif via Redis sur tous les endpoints critiques (à compléter/valider endpoint par endpoint)
 
 ### Infrastructure
 - [x] Caddy configuré pour SSL automatique
 - [x] Base de données et Redis non exposés sur le web (Bind local/Docker)
-- [x] Signature HMAC des webhooks (en cours de vérification pour tous les providers)
+- [ ] Signature HMAC des webhooks (en cours de vérification pour tous les providers)
 
 ---
 
 ## 3. Plan d'Action Final (Tâches Restantes)
+
+### Phase 0 : Correctifs Critiques Sécurité (immédiat)
+- [ ] Supprimer tous les fallbacks d'authentification non sécurisés (`store_123`, secret JWT par défaut, mocks permissifs)
+- [ ] Forcer le `store_id` depuis le contexte authentifié sur toutes les routes vendor
+- [ ] Ajouter/forcer les contrôles admin sur les routes `/api/pd/admin/*`
+- [ ] Finaliser les endpoints import/export produits (implémentation réelle batch jobs)
 
 ### Phase A : Validation & Tests (Semaine 1)
 - [ ] Réaliser des tests de bout en bout sur le flux de paiement direct (Pro+)
@@ -88,8 +101,8 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 ## 4. Plan de Vérification
 
 ### Tests Automatisés
-- [ ] Exécuter `npm test` dans le backend (Vitest)
-- [ ] Exécuter `npm run test` dans le frontend (Playwright/Jest)
+- [ ] Exécuter `npm test` dans le backend (Vitest) — actuellement en échec (tests middleware + dépendance AJV)
+- [ ] Exécuter `npm run lint` et `npm run build` dans le frontend — actuellement en échec (config lint + conflits routes/app)
 
 ### Tests Manuels
 1. **Flux Vendeur** : Inscription → KYC → Création Produit (draft) → Approbation Admin → Publication.

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { z } from 'zod';
-import { PdBadRequestError } from '../../../../utils/errors';
+import { PdBadRequestError, PdForbiddenError } from '../../../../utils/errors';
 import { Modules } from '@medusajs/framework/utils';
 import { IPdSubscriptionModuleService } from '../../../../modules/pd-subscription/types';
 import { IPdStoreModuleService } from '../../../../modules/pd-store/types';
@@ -44,7 +44,7 @@ export const POST = async (
   res: MedusaResponse,
 ) => {
   const schema = z.object({
-    store_id: z.string(),
+    store_id: z.string().optional(),
     title: z.string().min(1),
     description: z.string().optional(),
     price: z.number().min(0), // In a real setup, we map this to a variant and a price set
@@ -60,6 +60,16 @@ export const POST = async (
   }
 
   const data = parsed.data;
+  const authenticatedStoreId = (req as Record<string, unknown>).pd_store_id as string;
+  if (!authenticatedStoreId) {
+    throw new PdForbiddenError();
+  }
+
+  if (data.store_id && data.store_id !== authenticatedStoreId) {
+    throw new PdForbiddenError('PD_PERM_NOT_OWNER', 'store_id mismatch with authenticated vendor');
+  }
+
+  const storeId = authenticatedStoreId;
 
   // 1. Resolve services
   const storeModuleService: IPdStoreModuleService = req.scope.resolve('pdStoreModuleService');
@@ -67,21 +77,21 @@ export const POST = async (
   const productModuleService = req.scope.resolve(Modules.PRODUCT);
 
   // 2. Verify store exists
-  const store = await storeModuleService.retrieveStore(data.store_id);
+  const store = await storeModuleService.retrieveStore(storeId);
   
   // 3. Quota Enforcement: Check if vendor can create a new product
   // Get current product count
   const [, productCount] = await productModuleService.listAndCountProducts({
-    // @ts-ignore
-    "metadata.store_id": data.store_id,
+      // @ts-ignore
+      "metadata.store_id": storeId,
   });
 
   // This will throw a PdProductQuotaExceededError if limit is reached
-  await subscriptionModuleService.canCreateProduct(data.store_id, productCount);
+  await subscriptionModuleService.canCreateProduct(storeId, productCount);
 
   // Also enforce image quota
   if (data.images && data.images.length > 0) {
-    await subscriptionModuleService.canUploadImage(data.store_id, data.images.length);
+    await subscriptionModuleService.canUploadImage(storeId, data.images.length);
   }
 
   // 4. Create the product via Medusa core
@@ -92,8 +102,8 @@ export const POST = async (
       status: 'published', // Default to published
       thumbnail: data.images && data.images.length > 0 ? data.images[0] : null,
       images: data.images ? data.images.map(url => ({ url })) : [],
-      metadata: {
-        store_id: data.store_id,
+        metadata: {
+          store_id: storeId,
         category: data.category,
         is_digital: data.is_digital,
         price: data.price,
