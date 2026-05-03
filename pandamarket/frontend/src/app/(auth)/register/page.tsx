@@ -41,13 +41,14 @@ export default function RegisterPage() {
       saveAuthSession(access_token, vendor, store);
       api.setToken(access_token);
       router.push('/dashboard');
-    } catch (err: any) {
-      const message = err?.error?.message || 'Une erreur est survenue lors de la création de votre compte';
+    } catch (err: unknown) {
+      const apiErr = err as { error?: { message?: string; code?: string } };
+      const message =
+        apiErr?.error?.message ||
+        'Une erreur est survenue lors de la création de votre compte';
       setError(message);
-      // Go back to step 0 if it's an email/account error
-      if (err?.error?.code === 'PD_CONFLICT_EMAIL') setStep(0);
-      // Stay on step 1 if it's a subdomain error
-      if (err?.error?.code === 'PD_CONFLICT_SUBDOMAIN') setStep(1);
+      if (apiErr?.error?.code === 'PD_CONFLICT_EMAIL') setStep(0);
+      if (apiErr?.error?.code === 'PD_CONFLICT_SUBDOMAIN') setStep(1);
     } finally { setLoading(false); }
   };
 

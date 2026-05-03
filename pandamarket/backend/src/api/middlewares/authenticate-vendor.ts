@@ -19,6 +19,7 @@ export const authenticateVendor = async (
   try {
     const jwtSecret = process.env.PD_JWT_SECRET || process.env.JWT_SECRET;
     if (!jwtSecret) {
+      console.error('[authenticateVendor] PD_JWT_SECRET environment variable is not set');
       return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'Authentication configuration error'));
     }
 

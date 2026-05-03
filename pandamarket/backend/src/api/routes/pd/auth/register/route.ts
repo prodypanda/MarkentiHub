@@ -78,7 +78,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   // Issue JWT
   const jwtSecret = process.env.PD_JWT_SECRET || process.env.JWT_SECRET;
   if (!jwtSecret) {
-    throw new Error('JWT secret is not configured');
+    throw new Error('JWT secret is not configured. Please set the PD_JWT_SECRET environment variable.');
   }
 
   const accessToken = jwt.sign(

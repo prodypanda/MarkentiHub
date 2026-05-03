@@ -26,8 +26,10 @@ export default function LoginPage() {
       saveAuthSession(access_token, vendor, store);
       api.setToken(access_token);
       router.push('/dashboard');
-    } catch (err: any) {
-      const message = err?.error?.message || 'Email ou mot de passe incorrect';
+    } catch (err: unknown) {
+      const message =
+        (err as { error?: { message?: string } })?.error?.message ||
+        'Email ou mot de passe incorrect';
       setError(message);
     } finally {
       setLoading(false);
