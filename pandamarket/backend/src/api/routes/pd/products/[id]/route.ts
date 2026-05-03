@@ -1,74 +1,175 @@
-// @ts-nocheck
-import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { z } from 'zod';
-import { PdBadRequestError } from '../../../../../utils/errors';
+// pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+// =============================================================================
+// PandaMarket — Product Detail Routes
+// GET    /api/pd/products/:id   → Public product detail (must be published)
+// PUT    /api/pd/products/:id   → Authenticated vendor update (owner only)
+// DELETE /api/pd/products/:id   → Authenticated vendor delete (owner only)
+// store_id is ALWAYS derived from JWT; the product's metadata.store_id must match.
+// =============================================================================
+
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { Modules } from '@medusajs/framework/utils';
+import { z } from 'zod';
+
+import { requireStoreContext } from '../../../../middlewares/auth-context';
+import {
+  PdNotFoundError,
+  PdNotOwnerError,
+  PdValidationError,
+} from '../../../../../utils/errors';
+import { SubscriptionPlan } from '../../../../../utils/constants';
+import { createServiceLogger } from '../../../../../utils/logger';
+
+const logger = createServiceLogger('ProductDetailRoute');
+
+interface PdStoreLike {
+  id: string;
+  subscription_plan: SubscriptionPlan;
+}
+
+interface IPdStoreService {
+  listPdStores(args: { filters: { id: string } }): Promise<PdStoreLike[]>;
+}
+
+interface IPdSubscriptionService {
+  assertCanUploadImage(plan: SubscriptionPlan, currentCount: number): void;
+}
+
+interface ProductLike {
+  id: string;
+  status?: string;
+  metadata?: Record<string, unknown> | null;
+  images?: Array<{ url: string }> | null;
+}
+
+interface IProductModuleService {
+  retrieveProduct(id: string, opts?: Record<string, unknown>): Promise<ProductLike>;
+  updateProducts(id: string, data: Record<string, unknown>): Promise<ProductLike>;
+  deleteProducts(id: string): Promise<void>;
+}
+
+async function getProductForOwner(
+  req: MedusaRequest,
+  productId: string,
+  storeId: string,
+): Promise<ProductLike> {
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
+  let product: ProductLike;
+  try {
+    product = await productModuleService.retrieveProduct(productId);
+  } catch {
+    throw new PdNotFoundError('Produit');
+  }
+  const productStoreId = (product.metadata ?? {})['store_id'];
+  if (productStoreId !== storeId) {
+    throw new PdNotOwnerError(productId);
+  }
+  return product;
+}
+
+export const GET = async (
+  req: MedusaRequest,
+  res: MedusaResponse,
+): Promise<void> => {
+  const productId = req.params.id;
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
+
+  let product: ProductLike;
+  try {
+    product = await productModuleService.retrieveProduct(productId, {
+      relations: ['variants', 'categories', 'images'],
+    });
+  } catch {
+    throw new PdNotFoundError('Produit');
+  }
+
+  // Hide drafts & pending products from the public endpoint.
+  if (product.status !== 'published') {
+    throw new PdNotFoundError('Produit');
+  }
+
+  res.json({ product });
+};
+
+const updateProductSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
+  price: z.number().finite().nonnegative().optional(),
+  stock: z.number().int().nonnegative().optional(),
+  images: z.array(z.string().url()).max(50).optional(),
+  category: z.string().max(100).optional(),
+});
 
 export const PUT = async (
   req: MedusaRequest,
   res: MedusaResponse,
-) => {
+): Promise<void> => {
+  const { storeId } = requireStoreContext(req);
   const productId = req.params.id;
-  const schema = z.object({
-    store_id: z.string(),
-    title: z.string().min(1).optional(),
-    description: z.string().optional(),
-    price: z.number().min(0).optional(),
-    stock: z.number().min(0).optional(),
-    images: z.array(z.string()).optional(),
-    category: z.string().optional(),
-  });
 
-  const parsed = schema.safeParse(req.body);
+  const parsed = updateProductSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new PdBadRequestError('Invalid request body', parsed.error.format());
+    const fields: Record<string, string> = {};
+    parsed.error.issues.forEach((issue) => {
+      fields[issue.path.join('.')] = issue.message;
+    });
+    throw new PdValidationError('Données invalides', { fields });
   }
-
   const data = parsed.data;
-  const productModuleService = req.scope.resolve(Modules.PRODUCT);
 
-  // 1. Verify ownership (store_id)
-  const product = await productModuleService.retrieveProduct(productId);
-  if ((product.metadata as Record<string, any>)?.store_id !== data.store_id) {
-    throw new PdBadRequestError('Unauthorized to edit this product');
+  const product = await getProductForOwner(req, productId, storeId);
+
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
+
+  // Image quota — compare new image count against plan limit.
+  if (data.images && data.images.length > 0) {
+    const storeService = req.scope.resolve<IPdStoreService>('pdStoreService');
+    const subscriptionService = req.scope.resolve<IPdSubscriptionService>('pdSubscriptionService');
+    const [store] = await storeService.listPdStores({ filters: { id: storeId } });
+    if (store) {
+      subscriptionService.assertCanUploadImage(store.subscription_plan, data.images.length);
+    }
   }
 
-  // 2. We don't need quota checks for PUT (unless image count increases, 
-  // but for MVP we skip it here and rely on the UI/initial creation limits).
-
-  // 3. Update the product
-  const updateData: any = {};
-  if (data.title) updateData.title = data.title;
+  const updateData: Record<string, unknown> = {};
+  if (data.title !== undefined) updateData.title = data.title;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.images) {
-    updateData.images = data.images.map(url => ({ url }));
-    if (data.images.length > 0) updateData.thumbnail = data.images[0];
+    updateData.images = data.images.map((url) => ({ url }));
+    updateData.thumbnail = data.images[0] ?? null;
   }
-  
-  // Metadata updates
-  if (data.category !== undefined || data.price !== undefined || data.stock !== undefined) {
+
+  if (
+    data.category !== undefined ||
+    data.price !== undefined ||
+    data.stock !== undefined
+  ) {
     updateData.metadata = {
-      ...product.metadata,
-      ...(data.category && { category: data.category }),
-      ...(data.price !== undefined && { price: data.price }),
-      ...(data.stock !== undefined && { stock: data.stock }),
+      ...(product.metadata ?? {}),
+      ...(data.category !== undefined ? { category: data.category } : {}),
+      ...(data.price !== undefined ? { price: data.price } : {}),
+      ...(data.stock !== undefined ? { stock: data.stock } : {}),
     };
   }
 
   const updated = await productModuleService.updateProducts(productId, updateData);
 
+  logger.info({ store_id: storeId, product_id: productId }, 'Product updated');
   res.json({ product: updated });
 };
 
 export const DELETE = async (
   req: MedusaRequest,
   res: MedusaResponse,
-) => {
+): Promise<void> => {
+  const { storeId } = requireStoreContext(req);
   const productId = req.params.id;
-  // Note: in a real app, verify the authenticated user's store_id
-  
-  const productModuleService = req.scope.resolve(Modules.PRODUCT);
+
+  await getProductForOwner(req, productId, storeId);
+
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
   await productModuleService.deleteProducts(productId);
 
-  res.status(200).json({ success: true });
+  logger.info({ store_id: storeId, product_id: productId }, 'Product deleted');
+  res.json({ success: true });
 };

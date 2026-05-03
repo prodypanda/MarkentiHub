@@ -1,63 +1,109 @@
+// pandamarket/backend/src/subscribers/product-sync.ts
+// =============================================================================
+// PandaMarket — Meilisearch Product Sync
+// Keeps the Meilisearch index mirrored with published products.
+// =============================================================================
+
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
+
 import { getMeiliClient, MEILI_PRODUCTS_INDEX } from '../utils/meilisearch';
+import { createServiceLogger } from '../utils/logger';
+
+const logger = createServiceLogger('ProductSyncSubscriber');
+
+interface ProductLike {
+  id: string;
+  title: string;
+  description?: string | null;
+  thumbnail?: string | null;
+  status: string;
+  created_at: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface PdStoreLike {
+  id: string;
+  name: string;
+}
+
+interface IPdStoreService {
+  listPdStores(args: { filters: { id: string } }): Promise<PdStoreLike[]>;
+}
+
+interface IProductModuleService {
+  retrieveProduct(id: string, opts?: Record<string, unknown>): Promise<ProductLike>;
+}
 
 export default async function productSyncSubscriber({
   event: { data, name },
   container,
-}: SubscriberArgs<{ id: string }>) {
-  const productModuleService = container.resolve(Modules.PRODUCT);
-  const storeModuleService: any = container.resolve('pdStoreModuleService');
-  const meili = getMeiliClient();
-  const index = meili.index(MEILI_PRODUCTS_INDEX);
+}: SubscriberArgs<{ id: string }>): Promise<void> {
+  const productModuleService = container.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
+  const pdStoreService = container.resolve<IPdStoreService>('pdStoreService');
+  const index = getMeiliClient().index(MEILI_PRODUCTS_INDEX);
 
   const productId = data.id;
 
   if (name === 'product.deleted') {
-    await index.deleteDocument(productId);
+    try {
+      await index.deleteDocument(productId);
+    } catch (err) {
+      logger.warn({ err, product_id: productId }, 'Meilisearch delete failed');
+    }
     return;
   }
 
-  // Handle product.created and product.updated
-  const product = await productModuleService.retrieveProduct(productId, {
-    relations: ['variants', 'categories'],
-  });
+  let product: ProductLike;
+  try {
+    product = await productModuleService.retrieveProduct(productId, {
+      relations: ['variants', 'categories'],
+    });
+  } catch (err) {
+    logger.warn({ err, product_id: productId }, 'Product retrieve failed during sync');
+    return;
+  }
 
-  if (!product) return;
   if (product.status !== 'published') {
-    // If it was indexed but is now a draft, remove it from search
-    await index.deleteDocument(productId);
+    try {
+      await index.deleteDocument(productId);
+    } catch (err) {
+      logger.debug({ err, product_id: productId }, 'Meilisearch delete (non-published) failed');
+    }
     return;
   }
 
-  const storeId = (product.metadata as Record<string, any>)?.store_id;
+  const metadata = (product.metadata ?? {}) as { store_id?: string; category?: string; price?: number };
+  const storeId = metadata.store_id;
   let vendorName = 'PandaMarket Vendor';
 
   if (storeId) {
     try {
-      const store = await storeModuleService.retrieveStore(storeId);
-      vendorName = store.name;
-    } catch (e) {
-      // Store might not exist or be accessible
+      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      if (store) vendorName = store.name;
+    } catch (err) {
+      logger.debug({ err, store_id: storeId }, 'Store resolution failed');
     }
   }
 
-  // Format document for Meilisearch
   const document = {
     id: product.id,
     title: product.title,
-    description: product.description,
-    thumbnail: product.thumbnail,
+    description: product.description ?? '',
+    thumbnail: product.thumbnail ?? null,
     status: product.status,
     created_at: product.created_at,
-    category: (product.metadata as Record<string, any>)?.category || 'autre',
-    store_id: storeId,
+    category: metadata.category ?? 'autre',
+    store_id: storeId ?? null,
     vendor_name: vendorName,
-    // Typically price comes from variant price sets, but for MVP we use metadata
-    price: (product.metadata as Record<string, any>)?.price || 0,
+    price: metadata.price ?? 0,
   };
 
-  await index.addDocuments([document]);
+  try {
+    await index.addDocuments([document]);
+  } catch (err) {
+    logger.error({ err, product_id: productId }, 'Meilisearch upsert failed');
+  }
 }
 
 export const config: SubscriberConfig = {

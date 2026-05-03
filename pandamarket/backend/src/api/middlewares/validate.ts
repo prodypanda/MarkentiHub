@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/api/middlewares/validate.ts
 // =============================================================================
 // PandaMarket — Zod Validation Middleware

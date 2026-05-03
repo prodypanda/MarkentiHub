@@ -1,15 +1,7 @@
-// pandamarket/backend/src/api/routes/pd/stores/route.ts
-// =============================================================================
-// PandaMarket — Store API Routes
-// GET  /api/pd/stores/:id  → Get store details
-// PUT  /api/pd/stores/:id  → Update store (owner only)
-// GET  /api/pd/stores/resolve?hostname=xxx  → Resolve hostname to store_id
-// =============================================================================
-
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { z } from 'zod';
 
-import { PdStoreNotFoundError, PdValidationError } from '../../../../utils/errors';
+import { PdStoreNotFoundError, PdValidationError } from '../../../../../utils/errors';
 
 const resolveQuerySchema = z.object({
   hostname: z.string().trim().min(1).max(253),
@@ -48,10 +40,6 @@ function validationFields(error: z.ZodError): Record<string, string> {
   return fields;
 }
 
-/**
- * GET /api/pd/stores/resolve?hostname=xxx
- * Resolve a hostname to a store ID (used by Next.js middleware)
- */
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse,
@@ -68,12 +56,10 @@ export async function GET(
 
   const pdStoreService = req.scope.resolve<IPdStoreService>('pdStoreService');
   const storeId = await pdStoreService.resolveHostname(hostname);
-
   if (!storeId) {
     throw new PdStoreNotFoundError(hostname);
   }
 
-  // Return store details
   const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
   if (!store) {
     throw new PdStoreNotFoundError(storeId);

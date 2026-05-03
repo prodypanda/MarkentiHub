@@ -1,8 +1,39 @@
 import { Server as SocketServer } from 'socket.io';
+import type { Server as HttpServer } from 'http';
+import jwt from 'jsonwebtoken';
 
-let io: SocketServer;
+import { createServiceLogger } from '../../utils/logger';
 
-export function initSocketServer(server: any) {
+const logger = createServiceLogger('SocketMiddleware');
+
+let io: SocketServer | null = null;
+
+interface SocketJoinPayload {
+  storeId: string;
+  token: string;
+}
+
+interface PdSocketJwtPayload {
+  store_id: string;
+}
+
+function getJwtSecret(): string {
+  const secret = process.env.PD_JWT_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error('PD_JWT_SECRET must be set (>= 16 chars)');
+  }
+  return secret;
+}
+
+function isJoinPayload(data: unknown): data is SocketJoinPayload {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const payload = data as Record<string, unknown>;
+  return typeof payload.storeId === 'string' && typeof payload.token === 'string';
+}
+
+export function initSocketServer(server: HttpServer) {
   io = new SocketServer(server, {
     cors: {
       origin: process.env.PD_STORE_CORS?.split(',') || ['http://localhost:3000'],
@@ -12,20 +43,37 @@ export function initSocketServer(server: any) {
   });
 
   io.on('connection', (socket) => {
-    console.log('[Socket] Client connected:', socket.id);
+    logger.info({ socket_id: socket.id }, 'Client connected');
     
     // Vendor authenticates with their store ID to join a private notification room
-    socket.on('join_store', (data: { storeId: string, token: string }) => {
-      // Security: In production, verify the JWT token here before allowing join
+    socket.on('join_store', (data: unknown) => {
+      if (!isJoinPayload(data)) {
+        logger.warn({ socket_id: socket.id }, 'Invalid join_store payload');
+        socket.emit('error', { code: 'PD_AUTH_TOKEN_INVALID', message: 'Invalid socket auth payload' });
+        return;
+      }
+
       const storeId = data.storeId;
-      socket.join(`store_${storeId}`);
-      console.log(`[Socket] Vendor joined notification room: store_${storeId}`);
+      try {
+        const decoded = jwt.verify(data.token, getJwtSecret()) as PdSocketJwtPayload;
+        if (decoded.store_id !== storeId) {
+          logger.warn({ socket_id: socket.id, store_id: storeId }, 'Socket store mismatch');
+          socket.emit('error', { code: 'PD_PERM_NOT_OWNER', message: 'Invalid store room' });
+          return;
+        }
+        socket.join(`store_${storeId}`);
+        logger.info({ socket_id: socket.id, store_id: storeId }, 'Vendor joined notification room');
+      } catch (err) {
+        logger.warn({ err, socket_id: socket.id }, 'Socket token verification failed');
+        socket.emit('error', { code: 'PD_AUTH_TOKEN_INVALID', message: 'Invalid socket token' });
+        return;
+      }
       
       socket.emit('connected', { message: `Joined room for store ${storeId}` });
     });
 
     socket.on('disconnect', () => {
-      console.log('[Socket] Client disconnected:', socket.id);
+      logger.info({ socket_id: socket.id }, 'Client disconnected');
     });
   });
 
@@ -34,7 +82,7 @@ export function initSocketServer(server: any) {
 
 export function getSocketIO() {
   if (!io) {
-    console.warn('[Socket] Warning: IO instance requested before initialization.');
+    logger.warn({}, 'IO instance requested before initialization');
   }
   return io;
 }

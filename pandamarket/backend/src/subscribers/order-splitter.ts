@@ -1,6 +1,24 @@
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
 import { getSocketIO } from '../api/middlewares/socket';
+import { createServiceLogger } from '../utils/logger';
+
+const logger = createServiceLogger('OrderSplitterSubscriber');
+
+interface OrderItemLike {
+  id?: string;
+  quantity?: number;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface OrderLike {
+  id: string;
+  items?: OrderItemLike[] | null;
+}
+
+interface IOrderModuleService {
+  retrieveOrder(id: string, options: { relations: string[] }): Promise<OrderLike | null>;
+}
 
 export default async function orderSplitterSubscriber({
   event: { data },
@@ -9,7 +27,7 @@ export default async function orderSplitterSubscriber({
   const orderId = data.id;
   
   // Resolve core modules
-  const orderModuleService = container.resolve(Modules.ORDER);
+  const orderModuleService = container.resolve(Modules.ORDER) as unknown as IOrderModuleService;
   // const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT);
 
   try {
@@ -21,11 +39,15 @@ export default async function orderSplitterSubscriber({
     if (!order || !order.items || order.items.length === 0) return;
 
     // 1. Group items by their vendor's store_id
-    const storeItems: Record<string, any[]> = {};
+    const storeItems: Record<string, OrderItemLike[]> = {};
     
     for (const item of order.items) {
       // Safely extract the store_id from the item's metadata
-      const storeId = (item.metadata as Record<string, any>)?.store_id || 'platform';
+      const storeId = item.metadata?.store_id;
+      if (typeof storeId !== 'string' || !storeId) {
+        logger.error({ order_id: orderId, item_id: item.id }, 'Order item missing store_id metadata');
+        continue;
+      }
       if (!storeItems[storeId]) {
         storeItems[storeId] = [];
       }
@@ -33,10 +55,14 @@ export default async function orderSplitterSubscriber({
     }
 
     const storeIds = Object.keys(storeItems);
+    if (storeIds.length === 0) {
+      logger.error({ order_id: orderId }, 'No vendor store groups could be derived for order');
+      return;
+    }
     
     // 2. If all items belong to a single vendor, no complex splitting is required
     if (storeIds.length <= 1) {
-      console.log(`[Order Splitter] Order ${orderId} belongs to a single store. Standard fulfillment applies.`);
+      logger.info({ order_id: orderId, store_id: storeIds[0] }, 'Order belongs to a single store');
       
       const singleStoreId = storeIds[0];
       const io = getSocketIO();
@@ -50,7 +76,7 @@ export default async function orderSplitterSubscriber({
       return;
     }
 
-    console.log(`[Order Splitter] Split required: Order ${orderId} contains items from ${storeIds.length} different stores.`);
+    logger.info({ order_id: orderId, store_count: storeIds.length }, 'Order split required');
 
     // 3. For multi-vendor orders, we generate isolated fulfillment groups
     // In Medusa v2, you can create separate fulfillment groups (or separate Child Orders)
@@ -59,7 +85,7 @@ export default async function orderSplitterSubscriber({
     for (const storeId of storeIds) {
       const itemsForStore = storeItems[storeId];
       
-      console.log(`[Order Splitter] -> Generating distinct fulfillment group for vendor: ${storeId} (${itemsForStore.length} items).`);
+      logger.info({ order_id: orderId, store_id: storeId, item_count: itemsForStore.length }, 'Generating vendor fulfillment group');
       
       // Emit Real-Time WebSocket Notification to the vendor
       if (io) {
@@ -80,10 +106,10 @@ export default async function orderSplitterSubscriber({
       // });
     }
 
-    console.log(`[Order Splitter] Successfully separated ${storeIds.length} fulfillments for order ${orderId}.`);
+    logger.info({ order_id: orderId, store_count: storeIds.length }, 'Order fulfillment groups separated');
 
   } catch (error) {
-    console.error('[Order Splitter] Failed to split order:', error);
+    logger.error({ err: error, order_id: orderId }, 'Failed to split order');
   }
 }
 

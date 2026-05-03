@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/api/middlewares/error-handler.ts
 // =============================================================================
 // PandaMarket — Global Error Handler Middleware

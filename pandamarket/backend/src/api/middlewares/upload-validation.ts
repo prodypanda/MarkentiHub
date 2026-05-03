@@ -1,29 +1,58 @@
-import { NextFunction } from 'express';
-import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { PdFileInvalidTypeError, PdFileTooLargeError, PdValidationError } from '../../utils/errors';
+// pandamarket/backend/src/api/middlewares/upload-validation.ts
+// =============================================================================
+// PandaMarket — Upload Validation
+// Pre-flight checks for presigned URL requests (mime + size).
+// Accepts either {mimeType,fileSize} (legacy) or {content_type,file_size} (new).
+// =============================================================================
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import type { MedusaRequest, MedusaResponse, MedusaNextFunction } from '@medusajs/framework/http';
+
+import {
+  PdFileInvalidTypeError,
+  PdFileTooLargeError,
+  PdValidationError,
+} from '../../utils/errors';
+import { FILE_CONSTRAINTS } from '../../utils/constants';
+
+interface UploadValidationBody {
+  mimeType?: string;
+  fileSize?: number;
+  content_type?: string;
+  file_size?: number;
+}
+
+const ALLOWED_MIME_TYPES: readonly string[] = [
+  ...FILE_CONSTRAINTS.ALLOWED_IMAGE_TYPES,
+  ...FILE_CONSTRAINTS.ALLOWED_KYC_TYPES,
+];
 
 export const validateUpload = (
   req: MedusaRequest,
   _res: MedusaResponse,
-  next: NextFunction
-) => {
-  const body = req.body as { mimeType?: string; fileSize?: number };
-  const { mimeType, fileSize } = body;
+  next: MedusaNextFunction,
+): void => {
+  const body = (req.body ?? {}) as UploadValidationBody;
+  const mimeType = body.mimeType ?? body.content_type;
+  const fileSize = body.fileSize ?? body.file_size;
 
-  if (!mimeType || !fileSize) {
-    return next(new PdValidationError('mimeType and fileSize are required for presigned URLs'));
+  if (!mimeType || typeof fileSize !== 'number') {
+    return next(
+      new PdValidationError('mimeType/content_type et fileSize/file_size sont requis'),
+    );
   }
 
   if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
-    return next(new PdFileInvalidTypeError(ALLOWED_MIME_TYPES));
+    return next(new PdFileInvalidTypeError([...ALLOWED_MIME_TYPES]));
   }
 
-  if (fileSize > MAX_FILE_SIZE) {
-    return next(new PdFileTooLargeError('10MB', fileSize));
+  if (fileSize > FILE_CONSTRAINTS.MAX_IMAGE_SIZE) {
+    return next(
+      new PdFileTooLargeError(
+        `${Math.round(FILE_CONSTRAINTS.MAX_IMAGE_SIZE / (1024 * 1024))}MB`,
+        fileSize,
+      ),
+    );
   }
 
-  next();
+  return next();
 };

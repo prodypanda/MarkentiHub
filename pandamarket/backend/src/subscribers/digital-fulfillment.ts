@@ -1,13 +1,61 @@
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
+import jwt from 'jsonwebtoken';
 // import { sendEmail } from '../utils/email';
+import { createServiceLogger } from '../utils/logger';
+
+const logger = createServiceLogger('DigitalFulfillmentSubscriber');
+
+interface OrderItemLike {
+  title?: string | null;
+  product_id?: string | null;
+}
+
+interface OrderLike {
+  id: string;
+  email?: string | null;
+  customer_id?: string | null;
+  items?: OrderItemLike[] | null;
+}
+
+interface ProductLike {
+  id: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface IOrderModuleService {
+  retrieveOrder(id: string, options: { relations: string[] }): Promise<OrderLike | null>;
+}
+
+interface IProductModuleService {
+  retrieveProduct(id: string): Promise<ProductLike>;
+}
+
+function getJwtSecret(): string {
+  const secret = process.env.PD_JWT_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error('PD_JWT_SECRET must be set (>= 16 chars)');
+  }
+  return secret;
+}
+
+function getPublicApiBaseUrl(): string {
+  const baseUrl =
+    process.env.PD_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_MEDUSA_URL ??
+    process.env.PD_STORE_CORS?.split(',')[0];
+  if (!baseUrl) {
+    throw new Error('PD_PUBLIC_API_URL or NEXT_PUBLIC_MEDUSA_URL must be set for digital delivery links');
+  }
+  return baseUrl.replace(/\/$/, '');
+}
 
 export default async function digitalFulfillmentSubscriber({
   event: { data },
   container,
 }: SubscriberArgs<{ id: string }>) {
-  const orderModuleService = container.resolve(Modules.ORDER);
-  const productModuleService = container.resolve(Modules.PRODUCT);
+  const orderModuleService = container.resolve(Modules.ORDER) as unknown as IOrderModuleService;
+  const productModuleService = container.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
 
   try {
     const order = await orderModuleService.retrieveOrder(data.id, {
@@ -24,12 +72,20 @@ export default async function digitalFulfillmentSubscriber({
       if (!product_id) continue;
 
       const product = await productModuleService.retrieveProduct(product_id);
-      const isDigital = (product.metadata as Record<string, any>)?.is_digital;
+      const isDigital = product.metadata?.is_digital;
 
       if (isDigital) {
         // Generate a token for the download
-        const downloadToken = 'valid_purchase_token'; // Mock token for MVP
-        const downloadUrl = `${process.env.PD_STORE_CORS}/api/pd/digital/${product_id}/download?token=${downloadToken}`;
+        const downloadToken = jwt.sign(
+          {
+            sub: order.customer_id ?? order.email ?? order.id,
+            product_id,
+            order_id: order.id,
+          },
+          getJwtSecret(),
+          { expiresIn: '7d' },
+        );
+        const downloadUrl = `${getPublicApiBaseUrl()}/api/pd/digital/${product_id}/download?token=${downloadToken}`;
         
         digitalItems.push({
           title: item.title,
@@ -49,11 +105,11 @@ export default async function digitalFulfillmentSubscriber({
       //   data: { items: digitalItems }
       // });
       
-      console.log(`[Digital Fulfillment] Delivered ${digitalItems.length} digital products for order ${order.id}`);
+      logger.info({ order_id: order.id, digital_items: digitalItems.length }, 'Digital products delivered');
     }
 
   } catch (error) {
-    console.error('[Digital Fulfillment Error]', error);
+    logger.error({ err: error, order_id: data.id }, 'Digital fulfillment failed');
   }
 }
 

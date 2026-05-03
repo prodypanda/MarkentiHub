@@ -1,8 +1,37 @@
-// @ts-ignore
 import { Server as SocketIOServer } from 'socket.io';
-import { Server as HttpServer } from 'http';
+import type { Server as HttpServer } from 'http';
+import jwt from 'jsonwebtoken';
+
+import { createServiceLogger } from './logger';
+
+const logger = createServiceLogger('WebSocket');
 
 let io: SocketIOServer | null = null;
+
+interface SocketAuthPayload {
+  storeId: string;
+  token: string;
+}
+
+interface PdSocketJwtPayload {
+  store_id: string;
+}
+
+function getJwtSecret(): string {
+  const secret = process.env.PD_JWT_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error('PD_JWT_SECRET must be set (>= 16 chars)');
+  }
+  return secret;
+}
+
+function isSocketAuthPayload(data: unknown): data is SocketAuthPayload {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const payload = data as Record<string, unknown>;
+  return typeof payload.storeId === 'string' && typeof payload.token === 'string';
+}
 
 export const initializeWebSocket = (server: HttpServer) => {
   io = new SocketIOServer(server, {
@@ -13,28 +42,45 @@ export const initializeWebSocket = (server: HttpServer) => {
     },
   });
 
-  io.on('connection', (socket: any) => {
-    console.log('[WebSocket] Client connected:', socket.id);
+  io.on('connection', (socket) => {
+    logger.info({ socket_id: socket.id }, 'Client connected');
 
     // Vendor joins their specific store room to receive private notifications
-    socket.on('join_store', (storeId: string) => {
-      socket.join(storeId);
-      console.log(`[WebSocket] Socket ${socket.id} joined store ${storeId}`);
+    socket.on('join_store', (data: unknown) => {
+      if (!isSocketAuthPayload(data)) {
+        logger.warn({ socket_id: socket.id }, 'Invalid join_store payload');
+        socket.emit('error', { code: 'PD_AUTH_TOKEN_INVALID', message: 'Invalid socket auth payload' });
+        return;
+      }
+
+      try {
+        const decoded = jwt.verify(data.token, getJwtSecret()) as PdSocketJwtPayload;
+        if (decoded.store_id !== data.storeId) {
+          logger.warn({ socket_id: socket.id, store_id: data.storeId }, 'Socket store mismatch');
+          socket.emit('error', { code: 'PD_PERM_NOT_OWNER', message: 'Invalid store room' });
+          return;
+        }
+        socket.join(`store_${data.storeId}`);
+        logger.info({ socket_id: socket.id, store_id: data.storeId }, 'Socket joined store room');
+      } catch (err) {
+        logger.warn({ err, socket_id: socket.id }, 'Socket token verification failed');
+        socket.emit('error', { code: 'PD_AUTH_TOKEN_INVALID', message: 'Invalid socket token' });
+      }
     });
 
     socket.on('disconnect', () => {
-      console.log('[WebSocket] Client disconnected:', socket.id);
+      logger.info({ socket_id: socket.id }, 'Client disconnected');
     });
   });
 
   return io;
 };
 
-export const notifyVendor = (storeId: string, event: string, payload: any) => {
+export const notifyVendor = (storeId: string, event: string, payload: unknown) => {
   if (io) {
-    io.to(storeId).emit(event, payload);
-    console.log(`[WebSocket] Emitted ${event} to store ${storeId}`);
+    io.to(`store_${storeId}`).emit(event, payload);
+    logger.info({ store_id: storeId, event }, 'Vendor WebSocket event emitted');
   } else {
-    console.warn('[WebSocket] Cannot emit, Socket.io not initialized.');
+    logger.warn({ store_id: storeId, event }, 'Cannot emit, Socket.io not initialized');
   }
 };

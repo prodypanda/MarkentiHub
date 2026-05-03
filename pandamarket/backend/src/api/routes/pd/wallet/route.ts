@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/api/routes/pd/wallet/route.ts
 // =============================================================================
 // PandaMarket — Wallet Routes
@@ -8,7 +7,37 @@
 // =============================================================================
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { PdForbiddenError } from '../../../../utils/errors';
+import { z } from 'zod';
+
+import { requireStoreContext } from '../../../middlewares/auth-context';
+import { PdValidationError } from '../../../../utils/errors';
+
+const withdrawalSchema = z.object({
+  amount: z.coerce.number().positive(),
+});
+
+interface WalletLike {
+  balance: number;
+  pending_balance: number;
+  total_earned: number;
+  total_commission_paid: number;
+  total_withdrawn: number;
+  payout_mode: string;
+  retention_days: number;
+}
+
+interface IPdWalletService {
+  getWalletByStoreId(storeId: string): Promise<WalletLike>;
+  processWithdrawal(storeId: string, amount: number): Promise<unknown>;
+}
+
+function validationFields(error: z.ZodError): Record<string, string> {
+  const fields: Record<string, string> = {};
+  error.issues.forEach((issue) => {
+    fields[issue.path.join('.')] = issue.message;
+  });
+  return fields;
+}
 
 /**
  * GET /api/pd/wallet
@@ -18,13 +47,9 @@ export async function GET(
   req: MedusaRequest,
   res: MedusaResponse,
 ): Promise<void> {
-  const storeId = (req as Record<string, unknown>).pd_store_id as string;
+  const { storeId } = requireStoreContext(req);
 
-  if (!storeId) {
-    throw new PdForbiddenError();
-  }
-
-  const pdWalletService = req.scope.resolve('pdWalletService');
+  const pdWalletService = req.scope.resolve<IPdWalletService>('pdWalletService');
   const wallet = await pdWalletService.getWalletByStoreId(storeId);
 
   res.json({
@@ -48,16 +73,17 @@ export async function POST(
   req: MedusaRequest,
   res: MedusaResponse,
 ): Promise<void> {
-  const storeId = (req as Record<string, unknown>).pd_store_id as string;
+  const { storeId } = requireStoreContext(req);
 
-  if (!storeId) {
-    throw new PdForbiddenError();
+  const parsed = withdrawalSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
   }
 
-  const body = (req as Record<string, unknown>).validatedBody as { amount: number };
-
-  const pdWalletService = req.scope.resolve('pdWalletService');
-  const transaction = await pdWalletService.processWithdrawal(storeId, body.amount);
+  const pdWalletService = req.scope.resolve<IPdWalletService>('pdWalletService');
+  const transaction = await pdWalletService.processWithdrawal(storeId, parsed.data.amount);
 
   res.status(201).json({ transaction });
 }
