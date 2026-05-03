@@ -11,7 +11,11 @@ import { z } from 'zod';
 
 import { requireStoreContext } from '../../../middlewares/auth-context';
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
 import { PdPlanRequiredError, PdValidationError } from '../../../../utils/errors';
+=======
+import { PdPlanRequiredError, PdStoreNotFoundError, PdValidationError } from '../../../../utils/errors';
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
 =======
 import { PdPlanRequiredError, PdStoreNotFoundError, PdValidationError } from '../../../../utils/errors';
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
@@ -70,7 +74,12 @@ async function assertPlanHasApiKeys(
   const storeService = req.scope.resolve<IPdStoreService>('pdStoreService');
   const [store] = await storeService.listPdStores({ filters: { id: storeId } });
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
   const plan = store?.subscription_plan ?? SubscriptionPlan.Free;
+=======
+  if (!store) throw new PdStoreNotFoundError(storeId);
+  const plan = store.subscription_plan;
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/route.ts
 =======
   if (!store) throw new PdStoreNotFoundError(storeId);
   const plan = store.subscription_plan;

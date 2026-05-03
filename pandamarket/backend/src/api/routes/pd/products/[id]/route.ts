@@ -16,6 +16,10 @@ import {
   PdNotFoundError,
   PdNotOwnerError,
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+=======
+  PdStoreNotFoundError,
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 =======
   PdStoreNotFoundError,
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
@@ -27,7 +31,10 @@ import { createServiceLogger } from '../../../../../utils/logger';
 const logger = createServiceLogger('ProductDetailRoute');
 
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 =======
+=======
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 const paramsSchema = z.object({
   id: z.string().trim().min(1).max(128),
 });
@@ -50,6 +57,9 @@ function getProductId(req: MedusaRequest): string {
   return parsed.data.id;
 }
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 interface PdStoreLike {
   id: string;
@@ -101,7 +111,11 @@ export const GET = async (
   res: MedusaResponse,
 ): Promise<void> => {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productId = req.params.id;
+=======
+  const productId = getProductId(req);
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 =======
   const productId = getProductId(req);
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
@@ -139,6 +153,7 @@ export const PUT = async (
 ): Promise<void> => {
   const { storeId } = requireStoreContext(req);
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productId = req.params.id;
 
   const parsed = updateProductSchema.safeParse(req.body);
@@ -157,10 +172,20 @@ export const PUT = async (
       fields: validationFields(parsed.error),
     });
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+=======
+  const productId = getProductId(req);
+
+  const parsed = updateProductSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   }
   const data = parsed.data;
 
   const product = await getProductForOwner(req, productId, storeId);
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 
   const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
@@ -177,6 +202,9 @@ export const PUT = async (
 
 =======
 
+=======
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
 
   // Image quota — compare new image count against plan limit.
@@ -188,6 +216,9 @@ export const PUT = async (
     subscriptionService.assertCanUploadImage(store.subscription_plan, data.images.length);
   }
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const updateData: Record<string, unknown> = {};
   if (data.title !== undefined) updateData.title = data.title;
@@ -222,7 +253,11 @@ export const DELETE = async (
 ): Promise<void> => {
   const { storeId } = requireStoreContext(req);
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productId = req.params.id;
+=======
+  const productId = getProductId(req);
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 =======
   const productId = getProductId(req);
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts

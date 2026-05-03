@@ -29,6 +29,7 @@ import { createServiceLogger } from '../../../../utils/logger';
 const logger = createServiceLogger('ProductsRoute');
 
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
 interface PdStoreLike {
   id: string;
   is_verified: boolean;
@@ -46,6 +47,8 @@ interface IPdSubscriptionService {
 }
 
 =======
+=======
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
 function firstQueryValue(value: unknown): string | undefined {
   if (Array.isArray(value)) {
     return typeof value[0] === 'string' ? value[0] : undefined;
@@ -83,6 +86,9 @@ interface IPdSubscriptionService {
   assertCanUploadImage(plan: SubscriptionPlan, currentCount: number): void;
 }
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
 /**
  * GET /api/pd/products — public listing of published products.
@@ -93,10 +99,13 @@ export const GET = async (
   res: MedusaResponse,
 ): Promise<void> => {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
   const storeId = typeof req.query.store_id === 'string' ? req.query.store_id : undefined;
   const offset = Number.parseInt(req.query.offset as string, 10) || 0;
   const limit = Math.min(Number.parseInt(req.query.limit as string, 10) || 50, 100);
 =======
+=======
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
   const parsed = listProductsQuerySchema.safeParse({
     store_id: firstQueryValue(req.query.store_id),
     offset: firstQueryValue(req.query.offset) ?? undefined,
@@ -108,6 +117,9 @@ export const GET = async (
     });
   }
   const { store_id: storeId, offset, limit } = parsed.data;
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
 
   const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as {
@@ -122,6 +134,9 @@ export const GET = async (
     (filter as { 'metadata.store_id'?: string })['metadata.store_id'] = storeId;
   }
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+=======
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
 
   const [products, count] = await productModuleService.listAndCountProducts(filter, {
     select: ['id', 'title', 'description', 'status', 'thumbnail', 'metadata', 'created_at'],
@@ -130,6 +145,7 @@ export const GET = async (
     take: limit,
   });
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
 =======
 
   const [products, count] = await productModuleService.listAndCountProducts(filter, {
@@ -139,6 +155,8 @@ export const GET = async (
     take: limit,
   });
 
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
   res.json({ products, count, offset, limit });
 };
@@ -168,11 +186,17 @@ export const POST = async (
   const parsed = createProductSchema.safeParse(req.body);
   if (!parsed.success) {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
     const fields: Record<string, string> = {};
     parsed.error.issues.forEach((issue) => {
       fields[issue.path.join('.')] = issue.message;
     });
     throw new PdValidationError('Données invalides', { fields });
+=======
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
 =======
     throw new PdValidationError('Données invalides', {
       fields: validationFields(parsed.error),
@@ -193,11 +217,19 @@ export const POST = async (
   const eventBus = req.scope.resolve(Modules.EVENT_BUS) as unknown as {
     emit: (args: { name: string; data: Record<string, unknown> }) => Promise<void>;
   };
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
 
   const [store] = await storeService.listPdStores({ filters: { id: storeId } });
   if (!store) throw new PdStoreNotFoundError(storeId);
   if (store.status === StoreStatus.Suspended) throw new PdStoreSuspendedError(storeId);
 
+=======
+
+  const [store] = await storeService.listPdStores({ filters: { id: storeId } });
+  if (!store) throw new PdStoreNotFoundError(storeId);
+  if (store.status === StoreStatus.Suspended) throw new PdStoreSuspendedError(storeId);
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
   // Quota: current product count for this vendor.
   const [, productCount] = await productModuleService.listAndCountProducts(
     { 'metadata.store_id': storeId },
@@ -253,12 +285,21 @@ export const POST = async (
     });
   }
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/route.ts
 
   logger.info(
     { store_id: storeId, product_id: product.id, status: productStatus },
     'Product created',
   );
 
+=======
+
+  logger.info(
+    { store_id: storeId, product_id: product.id, status: productStatus },
+    'Product created',
+  );
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/route.ts
 =======
 
   logger.info(

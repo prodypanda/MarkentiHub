@@ -25,6 +25,20 @@ function getJwtSecret(): string {
   return secret;
 }
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/utils/websocket.ts
+=======
+function getCorsOrigins(): string[] {
+  const origins = process.env.PD_STORE_CORS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (origins?.length) return origins;
+  if (process.env.PD_NODE_ENV === 'production') {
+    throw new Error('PD_STORE_CORS must be set for WebSocket CORS in production');
+  }
+  return ['http://localhost:3000'];
+}
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/utils/websocket.ts
 function isSocketAuthPayload(data: unknown): data is SocketAuthPayload {
   if (!data || typeof data !== 'object') {
     return false;
@@ -33,10 +47,21 @@ function isSocketAuthPayload(data: unknown): data is SocketAuthPayload {
   return typeof payload.storeId === 'string' && typeof payload.token === 'string';
 }
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/utils/websocket.ts
+=======
+function isSocketJwtPayload(data: unknown): data is PdSocketJwtPayload {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const payload = data as Record<string, unknown>;
+  return typeof payload.store_id === 'string' && payload.store_id.length > 0;
+}
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/utils/websocket.ts
 export const initializeWebSocket = (server: HttpServer) => {
   io = new SocketIOServer(server, {
     cors: {
-      origin: process.env.PD_STORE_CORS || 'http://localhost:3000',
+      origin: getCorsOrigins(),
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -54,7 +79,16 @@ export const initializeWebSocket = (server: HttpServer) => {
       }
 
       try {
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/utils/websocket.ts
         const decoded = jwt.verify(data.token, getJwtSecret()) as PdSocketJwtPayload;
+=======
+        const decoded = jwt.verify(data.token, getJwtSecret());
+        if (!isSocketJwtPayload(decoded)) {
+          logger.warn({ socket_id: socket.id, store_id: data.storeId }, 'Invalid socket token payload');
+          socket.emit('error', { code: 'PD_AUTH_TOKEN_INVALID', message: 'Invalid socket token' });
+          return;
+        }
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/utils/websocket.ts
         if (decoded.store_id !== data.storeId) {
           logger.warn({ socket_id: socket.id, store_id: data.storeId }, 'Socket store mismatch');
           socket.emit('error', { code: 'PD_PERM_NOT_OWNER', message: 'Invalid store room' });

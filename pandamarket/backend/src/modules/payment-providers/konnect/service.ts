@@ -30,6 +30,7 @@ interface KonnectVendorKeys {
 }
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 
 interface PdStoreWithKonnectConfig {
   id: string;
@@ -89,6 +90,32 @@ type ProviderStatus =
   | 'canceled'
   | 'captured';
 
+=======
+
+interface PdStoreWithKonnectConfig {
+  id: string;
+  subscription_plan: SubscriptionPlan;
+  payment_config?: {
+    konnect?: {
+      api_key_encrypted?: string;
+      wallet_id?: string;
+    };
+  } | null;
+}
+
+interface IPdStoreService {
+  listPdStores(args: { filters: { id: string } }): Promise<PdStoreWithKonnectConfig[]>;
+}
+
+type ProviderStatus =
+  | 'authorized'
+  | 'error'
+  | 'requires_more'
+  | 'pending'
+  | 'canceled'
+  | 'captured';
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 interface PaymentContextShape {
   amount?: number;
   resource_id?: string;
@@ -98,6 +125,9 @@ interface PaymentContextShape {
 }
 
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 =======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
@@ -125,6 +155,12 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
     if (!this.useRealApi && !isDirect) {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
+      if (process.env.PD_NODE_ENV === 'production') {
+        throw new Error('PD_KONNECT_ENABLED and KONNECT_API_KEY must be configured for production payments');
+      }
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 =======
       if (process.env.PD_NODE_ENV === 'production') {
         throw new Error('PD_KONNECT_ENABLED and KONNECT_API_KEY must be configured for production payments');
@@ -165,6 +201,7 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
       throw err;
     }
   }
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 
   private async resolveVendorKeys(
     storeId: string | undefined,
@@ -183,6 +220,19 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
       if (!konnect?.api_key_encrypted) return { isDirect: false };
 
 =======
+=======
+
+  private async resolveVendorKeys(
+    storeId: string | undefined,
+  ): Promise<{ isDirect: boolean; vendorKeys?: KonnectVendorKeys }> {
+    if (!storeId) return { isDirect: false };
+    try {
+      const storeService = (this as unknown as {
+        container_: { resolve<T>(name: string): T };
+      }).container_.resolve<IPdStoreService>('pdStoreService');
+      const [store] = await storeService.listPdStores({ filters: { id: storeId } });
+      if (!store) return { isDirect: false };
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
       const plan = store.subscription_plan;
       if (!plan || !PLAN_LIMITS[plan]) {
         logger.error({ store_id: storeId }, 'Store has no valid subscription plan for direct payments');
@@ -193,6 +243,9 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
       const konnect = store.payment_config?.konnect;
       if (!konnect?.api_key_encrypted) return { isDirect: false };
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
       return {
         isDirect: true,
@@ -239,6 +292,12 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
     if (!this.useRealApi) {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
+      if (process.env.PD_NODE_ENV === 'production') {
+        return { data: paymentSessionData, status: 'error' };
+      }
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 =======
       if (process.env.PD_NODE_ENV === 'production') {
         return { data: paymentSessionData, status: 'error' };

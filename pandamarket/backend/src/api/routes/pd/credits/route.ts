@@ -9,6 +9,10 @@ import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { requireStoreContext } from '../../../middlewares/auth-context';
 import { PLAN_LIMITS, SubscriptionPlan } from '../../../../utils/constants';
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/credits/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/credits/route.ts
+=======
+import { PdStoreNotFoundError } from '../../../../utils/errors';
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/credits/route.ts
 =======
 import { PdStoreNotFoundError } from '../../../../utils/errors';
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/credits/route.ts
@@ -43,7 +47,12 @@ export const GET = async (
 
   const [store] = await storeService.listPdStores({ filters: { id: storeId } });
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/credits/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/credits/route.ts
   const plan = store?.subscription_plan ?? SubscriptionPlan.Free;
+=======
+  if (!store) throw new PdStoreNotFoundError(storeId);
+  const plan = store.subscription_plan;
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/credits/route.ts
 =======
   if (!store) throw new PdStoreNotFoundError(storeId);
   const plan = store.subscription_plan;

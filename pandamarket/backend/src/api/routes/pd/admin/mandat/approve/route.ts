@@ -8,6 +8,10 @@
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
+=======
+import { requireAdminContext } from '../../../../../middlewares/auth-context';
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
 =======
 import { requireAdminContext } from '../../../../../middlewares/auth-context';
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
@@ -17,6 +21,10 @@ export const POST = async (
   res: MedusaResponse,
 ): Promise<void> => {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
+=======
+  requireAdminContext(req);
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts
 =======
   requireAdminContext(req);
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandat/approve/route.ts

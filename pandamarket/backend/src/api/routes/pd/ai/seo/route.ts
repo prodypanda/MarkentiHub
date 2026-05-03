@@ -16,6 +16,10 @@ import {
   PdNotOwnerError,
   PdPlanRequiredError,
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
+=======
+  PdStoreNotFoundError,
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
 =======
   PdStoreNotFoundError,
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
@@ -95,7 +99,12 @@ export const POST = async (
   // Plan gate + token deduction.
   const [store] = await storeService.listPdStores({ filters: { id: storeId } });
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
   const plan = store?.subscription_plan ?? SubscriptionPlan.Free;
+=======
+  if (!store) throw new PdStoreNotFoundError(storeId);
+  const plan = store.subscription_plan;
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/ai/seo/route.ts
 =======
   if (!store) throw new PdStoreNotFoundError(storeId);
   const plan = store.subscription_plan;
