@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { PdForbiddenError } from '../../../../utils/errors';
-import { PdForbiddenError } from '../../../../utils/errors';
 
 export const GET = async (
   req: MedusaRequest,
