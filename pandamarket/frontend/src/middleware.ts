@@ -58,16 +58,20 @@ export async function middleware(request: NextRequest) {
     if (resolveRes.ok) {
       const data = await resolveRes.json();
 
+      // Sanitize header values: strip any ASCII control characters (including \r \n)
+      // to prevent HTTP response splitting or header injection.
+      const sanitize = (val: string) => val.replace(/[\x00-\x1F\x7F]/g, '');
+
       // Rewrite to the internal storefront path while preserving the browser URL.
       // (store)/storefront/page.tsx handles the storefront homepage.
       const targetPathname = pathname === '/' ? '/storefront' : pathname;
       const rewriteUrl = new URL(targetPathname, request.url);
       const response = NextResponse.rewrite(rewriteUrl);
       response.headers.set('x-pd-route-type', 'store');
-      response.headers.set('x-pd-store-id', data.store.id);
-      response.headers.set('x-pd-store-subdomain', data.store.subdomain || '');
-      response.headers.set('x-pd-store-theme', data.store.theme_id || 'minimal');
-      response.headers.set('x-pd-store-name', data.store.name || '');
+      response.headers.set('x-pd-store-id', sanitize(data.store.id || ''));
+      response.headers.set('x-pd-store-subdomain', sanitize(data.store.subdomain || ''));
+      response.headers.set('x-pd-store-theme', sanitize(data.store.theme_id || 'minimal'));
+      response.headers.set('x-pd-store-name', sanitize(data.store.name || ''));
       return applySecurityHeaders(response);
     }
   } catch {

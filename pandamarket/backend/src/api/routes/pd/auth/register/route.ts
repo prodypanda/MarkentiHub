@@ -78,6 +78,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   // Issue JWT
   const jwtSecret = process.env.PD_JWT_SECRET || process.env.JWT_SECRET;
   if (!jwtSecret) {
+    console.error('[auth/register] PD_JWT_SECRET environment variable is not set');
     throw new Error('JWT secret is not configured. Please set the PD_JWT_SECRET environment variable.');
   }
 
@@ -88,6 +89,8 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       role: 'vendor',
     },
     jwtSecret,
+    // Short expiry (default 15m) is intentional; a refresh-token flow
+    // (PD_REFRESH_TOKEN_EXPIRY) is planned for Phase A but not yet implemented.
     { expiresIn: process.env.PD_JWT_EXPIRY || '15m' },
   );
 

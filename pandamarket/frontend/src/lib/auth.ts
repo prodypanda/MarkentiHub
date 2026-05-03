@@ -5,7 +5,7 @@ const TOKEN_KEY = 'pd_access_token';
 const VENDOR_KEY = 'pd_vendor';
 const STORE_KEY = 'pd_store';
 
-interface PdVendorSession {
+export interface PdVendorSession {
   id: string;
   email: string;
   first_name: string | null;
@@ -13,7 +13,7 @@ interface PdVendorSession {
   role: string;
 }
 
-interface PdStoreSession {
+export interface PdStoreSession {
   id: string;
   name: string;
   subdomain: string;

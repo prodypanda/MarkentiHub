@@ -1,4 +1,11 @@
-// pandamarket/frontend/src/lib/api.ts
+import type { PdVendorSession, PdStoreSession } from './auth';
+
+interface PdAuthResponse {
+  access_token: string;
+  vendor: PdVendorSession;
+  store: PdStoreSession;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_MEDUSA_URL || 'http://localhost:9000';
 
 class PdApiClient {
@@ -27,7 +34,7 @@ class PdApiClient {
 
   // Auth
   async login(email: string, password: string) {
-    return this.request<{ access_token: string; vendor: any; store: any }>(
+    return this.request<PdAuthResponse>(
       'POST', '/api/pd/auth/login', { body: { email, password } }
     );
   }
@@ -36,7 +43,7 @@ class PdApiClient {
     first_name: string; last_name: string; email: string; password: string;
     store_name: string; subdomain: string; category?: string;
   }) {
-    return this.request<{ access_token: string; vendor: any; store: any }>(
+    return this.request<PdAuthResponse>(
       'POST', '/api/pd/auth/register', { body: data }
     );
   }
