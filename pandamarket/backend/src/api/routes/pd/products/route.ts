@@ -44,7 +44,6 @@ export const POST = async (
   res: MedusaResponse,
 ) => {
   const schema = z.object({
-    store_id: z.string().optional(),
     title: z.string().min(1),
     description: z.string().optional(),
     price: z.number().min(0), // In a real setup, we map this to a variant and a price set
@@ -63,10 +62,6 @@ export const POST = async (
   const authenticatedStoreId = (req as Record<string, unknown>).pd_store_id as string;
   if (!authenticatedStoreId) {
     throw new PdForbiddenError();
-  }
-
-  if (data.store_id && data.store_id !== authenticatedStoreId) {
-    throw new PdForbiddenError('PD_PERM_NOT_OWNER', 'store_id mismatch with authenticated vendor');
   }
 
   const storeId = authenticatedStoreId;

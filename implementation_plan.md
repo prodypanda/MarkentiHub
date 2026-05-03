@@ -75,7 +75,7 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 ## 3. Plan d'Action Final (Tâches Restantes)
 
 ### Phase 0 : Correctifs Critiques Sécurité (immédiat)
-- [ ] Supprimer tous les fallbacks d'authentification non sécurisés (`store_123`, secret JWT par défaut, mocks permissifs)
+- [x] Supprimer les fallbacks d'authentification non sécurisés déjà identifiés (`store_123`, secret JWT par défaut, mocks permissifs)
 - [ ] Forcer le `store_id` depuis le contexte authentifié sur toutes les routes vendor
 - [ ] Ajouter/forcer les contrôles admin sur les routes `/api/pd/admin/*`
 - [ ] Finaliser les endpoints import/export produits (implémentation réelle batch jobs)

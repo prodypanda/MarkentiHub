@@ -17,7 +17,7 @@ export const authenticateVendor = async (
   const token = authHeader.split(' ')[1];
 
   try {
-    const jwtSecret = process.env.PD_JWT_SECRET;
+    const jwtSecret = process.env.PD_JWT_SECRET || process.env.JWT_SECRET;
     if (!jwtSecret) {
       return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'Authentication configuration error'));
     }
