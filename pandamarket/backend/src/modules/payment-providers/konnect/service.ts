@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { AbstractPaymentProvider } from '@medusajs/framework/utils';
 import { PaymentProviderError, PaymentProviderSessionResponse, ProviderWebhookPayload } from '@medusajs/framework/types';
+import { decryptAES256 } from '../../../../utils/crypto';
 
 export class KonnectPaymentProvider extends AbstractPaymentProvider<any> {
   static identifier = 'pd-konnect';
@@ -50,11 +51,36 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<any> {
     const amount = context.amount;
     const orderId = context.resource_id || 'temp_' + Date.now();
     
+    // Extract store ID from context metadata if available
+    const storeId = context.cart?.metadata?.store_id || context.metadata?.store_id || context.session_data?.store_id;
+    let isDirect = false;
+    let vendorKeys = undefined;
+
+    if (storeId) {
+      try {
+        const storeService: any = this.container_.resolve('pdStoreModuleService');
+        const store = await storeService.retrieveStore(storeId);
+        
+        // Only Pro, Golden, and Platinum plans allow direct payments
+        const allowedPlans = ['pro', 'golden', 'platinum'];
+        
+        if (allowedPlans.includes(store.subscription_plan) && store.payment_config?.konnect) {
+          isDirect = true;
+          // In Konnect's case, it might use api_key instead of public/secret pair
+          vendorKeys = {
+            api_key: store.payment_config.konnect.api_key_encrypted ? decryptAES256(store.payment_config.konnect.api_key_encrypted) : ''
+          };
+        }
+      } catch (e) {
+        console.error('Error resolving store payment config for Konnect, falling back to escrow', e);
+      }
+    }
+
     // Mocking the call since we might not have real keys during development
     let konnectSession = { payUrl: 'https://api.konnect.network/pay/mock', paymentRef: 'mock_ref' };
     
-    if (process.env.KONNECT_API_KEY) {
-      konnectSession = await this.createKonnectPayment(amount, orderId, false);
+    if (process.env.KONNECT_API_KEY || isDirect) {
+      konnectSession = await this.createKonnectPayment(amount, orderId, isDirect, vendorKeys);
     }
 
     return {
@@ -62,6 +88,8 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<any> {
         payment_id: konnectSession.paymentRef,
         link: konnectSession.payUrl,
         status: 'pending',
+        is_direct: isDirect,
+        store_id: storeId,
       },
     };
   }

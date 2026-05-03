@@ -11,7 +11,11 @@
     "format": "prettier --write \"**/*.{ts,tsx,css}\""
   },
   "dependencies": {
+    "@grapesjs/react": "^2.0.0",
+    "@medusajs/medusa-js": "^6.1.10",
     "clsx": "^2.1.0",
+    "grapesjs": "^0.22.16",
+    "grapesjs-preset-webpage": "^1.0.3",
     "lucide-react": "^1.14.0",
     "meilisearch": "^0.58.0",
     "next": "^14.2.0",

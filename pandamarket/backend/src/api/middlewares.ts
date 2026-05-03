@@ -1,4 +1,5 @@
 import { defineMiddlewares } from '@medusajs/framework/http';
+import helmet from 'helmet';
 import { authenticateApiKey } from './middlewares/api-key';
 import { authenticateVendor } from './middlewares/authenticate-vendor';
 import { validateUpload } from './middlewares/upload-validation';
@@ -6,6 +7,11 @@ import { publicRateLimit, authRateLimit } from './middlewares/rate-limit';
 
 export default defineMiddlewares({
   routes: [
+    {
+      // Apply Helmet globally to all custom endpoints
+      matcher: '/api/pd/*',
+      middlewares: [helmet()],
+    },
     {
       // Protect vendor API routes
       matcher: '/api/pd/vendor/*',

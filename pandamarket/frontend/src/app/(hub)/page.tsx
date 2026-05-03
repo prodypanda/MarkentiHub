@@ -12,7 +12,26 @@ export const metadata = {
   description: 'Découvrez des milliers de produits de vendeurs tunisiens vérifiés. Créez votre boutique en ligne gratuite.',
 };
 
-function HeroSection() {
+async function getHubData() {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+  try {
+    // Note: To fetch global products across all stores for the hub, we use the standard Medusa store products endpoint
+    const res = await fetch(`${BACKEND_URL}/store/products?limit=8`, {
+      next: { revalidate: 60 }
+    });
+    if (!res.ok) return { products: [], count: 0 };
+    const data = await res.json();
+    return {
+      products: data.products || [],
+      count: data.count || 0
+    };
+  } catch (e) {
+    console.error('Error fetching hub data', e);
+    return { products: [], count: 0 };
+  }
+}
+
+function HeroSection({ productCount }: { productCount: number }) {
   return (
     <section style={{
       position: 'relative', overflow: 'hidden',
@@ -88,8 +107,8 @@ function HeroSection() {
             marginTop: 56, flexWrap: 'wrap',
           }}>
             {[
-              { value: '1,200+', label: 'Produits' },
-              { value: '150+', label: 'Boutiques' },
+              { value: `${productCount}+`, label: 'Produits' },
+              { value: 'Bêta', label: 'Boutiques' },
               { value: '99.9%', label: 'Uptime' },
             ].map((stat) => (
               <div key={stat.label} style={{ textAlign: 'center' }}>
@@ -98,6 +117,71 @@ function HeroSection() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LatestProductsSection({ products }: { products: any[] }) {
+  if (!products || products.length === 0) return null;
+
+  return (
+    <section style={{ padding: '80px 24px', backgroundColor: '#f8fafc' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+          <div>
+            <h2 style={{ fontSize: 'var(--pd-fs-3xl)', fontWeight: 800, color: '#111827', marginBottom: 8 }}>
+              Nouveautés du Hub
+            </h2>
+            <p style={{ color: '#64748b' }}>Les derniers produits ajoutés par nos vendeurs</p>
+          </div>
+          <Link href="/search" style={{ color: '#16C784', fontWeight: 600, textDecoration: 'none' }}>
+            Voir tout &rarr;
+          </Link>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: 24,
+        }}>
+          {products.map((product) => (
+            <Link key={product.id} href={`/product/${product.handle || product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div style={{
+                backgroundColor: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ width: '100%', height: 220, backgroundColor: '#f1f5f9', position: 'relative' }}>
+                  {product.thumbnail && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.thumbnail} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
+                </div>
+                <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {product.title}
+                  </h3>
+                  {/* Extract price from Medusa variants if possible */}
+                  {product.variants && product.variants[0] && product.variants[0].prices && product.variants[0].prices[0] ? (
+                    <div style={{ fontWeight: 800, color: '#16C784', fontSize: '1.25rem', marginTop: 'auto' }}>
+                      {(product.variants[0].prices[0].amount / 1000).toFixed(3)} TND
+                    </div>
+                  ) : (
+                    <div style={{ fontWeight: 800, color: '#16C784', fontSize: '1.25rem', marginTop: 'auto' }}>
+                      {product.metadata?.price ? Number(product.metadata.price).toFixed(3) : 'Prix sur demande'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </section>
@@ -186,10 +270,13 @@ function CTASection() {
   );
 }
 
-export default function HubHomePage() {
+export default async function HubHomePage() {
+  const { products, count } = await getHubData();
+
   return (
     <>
-      <HeroSection />
+      <HeroSection productCount={count} />
+      <LatestProductsSection products={products} />
       <FeaturesSection />
       <CTASection />
     </>

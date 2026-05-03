@@ -5,16 +5,14 @@
 // =============================================================================
 
 import * as crypto from 'crypto';
-import { promisify } from 'util';
+import * as bcrypt from 'bcrypt';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
-const SCRYPT_KEYLEN = 64;
-const SCRYPT_SALT_LEN = 32;
+const BCRYPT_SALT_ROUNDS = 12;
 const API_KEY_PBKDF2_ITERATIONS = 210_000;
 const API_KEY_PBKDF2_KEYLEN = 32;
 const API_KEY_PBKDF2_DIGEST = 'sha256';
-const scryptAsync = promisify(crypto.scrypt);
 
 /**
  * Get the encryption key from environment variables.
@@ -120,25 +118,20 @@ export function generateApiKey(): {
 }
 
 /**
- * Hash a password using Node.js native scrypt.
- * Returns format: salt:derivedKey (both hex)
+ * Hash a password using bcrypt (12 rounds) as per security guidelines.
  */
 export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.randomBytes(SCRYPT_SALT_LEN).toString('hex');
-  const derived = (await scryptAsync(password, salt, SCRYPT_KEYLEN)) as Buffer;
-  return `${salt}:${derived.toString('hex')}`;
+  return await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 }
 
 /**
- * Compare a plaintext password against a scrypt hash.
+ * Compare a plaintext password against a bcrypt hash.
  */
 export async function verifyPassword(
   password: string,
   hash: string,
 ): Promise<boolean> {
-  const [salt, key] = hash.split(':');
-  const derived = (await scryptAsync(password, salt, SCRYPT_KEYLEN)) as Buffer;
-  return crypto.timingSafeEqual(Buffer.from(key, 'hex'), derived);
+  return await bcrypt.compare(password, hash);
 }
 
 /**

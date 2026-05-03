@@ -53,15 +53,41 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<any> {
     const amount = context.amount; // Ensure it's passed down correctly
     const orderId = context.resource_id || 'temp_' + Date.now();
     
-    // We would determine if this is a direct or escrow payment based on vendor subscription
-    // For this boilerplate, we assume escrow by default
-    const flouciSession = await this.createFlouciPayment(amount, orderId, false);
+    // Extract store ID from context metadata if available
+    const storeId = context.cart?.metadata?.store_id || context.metadata?.store_id || context.session_data?.store_id;
+    let isDirect = false;
+    let vendorKeys = undefined;
+
+    if (storeId) {
+      try {
+        const storeService: any = this.container_.resolve('pdStoreModuleService');
+        const store = await storeService.retrieveStore(storeId);
+        
+        // Only Pro, Golden, and Platinum plans allow direct payments
+        const allowedPlans = ['pro', 'golden', 'platinum'];
+        
+        if (allowedPlans.includes(store.subscription_plan) && store.payment_config?.flouci) {
+          isDirect = true;
+          // Decrypt the AES-256-GCM encrypted vendor keys stored in the database
+          vendorKeys = {
+            public_key: store.payment_config.flouci.public_key,
+            secret_key: decryptAES256(store.payment_config.flouci.secret_key_encrypted)
+          };
+        }
+      } catch (e) {
+        console.error('Error resolving store payment config, falling back to escrow', e);
+      }
+    }
+
+    const flouciSession = await this.createFlouciPayment(amount, orderId, isDirect, vendorKeys);
 
     return {
       session_data: {
         payment_id: flouciSession.payment_id,
         link: flouciSession.link,
         status: 'pending',
+        is_direct: isDirect,
+        store_id: storeId,
       },
     };
   }

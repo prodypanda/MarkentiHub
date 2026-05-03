@@ -1,49 +1,44 @@
 import { NextFunction } from 'express';
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import Redis from 'ioredis';
 
-interface RateLimitInfo {
-  count: number;
-  resetTime: number;
-}
-
-// In-memory store for rate limiting (for a distributed setup, replace with Redis)
-const store = new Map<string, RateLimitInfo>();
+const redis = new Redis({
+  host: process.env.PD_REDIS_HOST || 'localhost',
+  port: parseInt(process.env.PD_REDIS_PORT || '6379', 10),
+});
 
 export function rateLimit(options: { max: number; windowMs: number }) {
-  return (req: MedusaRequest, res: MedusaResponse, next: NextFunction) => {
-    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
-    const now = Date.now();
-    
-    // Simple garbage collection
-    if (Math.random() < 0.05) {
-      for (const [key, info] of store.entries()) {
-        if (now > info.resetTime) store.delete(key);
+  return async (req: MedusaRequest, res: MedusaResponse, next: NextFunction) => {
+    try {
+      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+      const key = `pd_ratelimit:${ip}`;
+      
+      const count = await redis.incr(key);
+      let ttl = await redis.pttl(key);
+      
+      if (count === 1 || ttl === -1) {
+        await redis.pexpire(key, options.windowMs);
+        ttl = options.windowMs;
       }
+
+      res.setHeader('X-RateLimit-Limit', options.max);
+      res.setHeader('X-RateLimit-Remaining', Math.max(0, options.max - count));
+      res.setHeader('X-RateLimit-Reset', Math.ceil((Date.now() + ttl) / 1000));
+
+      if (count > options.max) {
+        res.status(429).json({
+          type: 'RateLimitError',
+          message: 'Too many requests, please try again later.',
+          code: 'PD_RATE_LIMIT_EXCEEDED'
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      // If Redis fails, gracefully fail open to not block traffic
+      next();
     }
-
-    let info = store.get(ip);
-
-    if (!info || now > info.resetTime) {
-      info = { count: 0, resetTime: now + options.windowMs };
-    }
-
-    info.count++;
-    store.set(ip, info);
-
-    res.setHeader('X-RateLimit-Limit', options.max);
-    res.setHeader('X-RateLimit-Remaining', Math.max(0, options.max - info.count));
-    res.setHeader('X-RateLimit-Reset', Math.ceil(info.resetTime / 1000));
-
-    if (info.count > options.max) {
-      res.status(429).json({
-        type: 'RateLimitError',
-        message: 'Too many requests, please try again later.',
-        code: 'PD_RATE_LIMIT_EXCEEDED'
-      });
-      return;
-    }
-
-    next();
   };
 }
 
