@@ -16,11 +16,6 @@ const bodySchema = z.object({
   rejection_reason: z.string().min(3).max(500).optional(),
 });
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
 const paramsSchema = z.object({
   id: z.string().trim().min(1).max(128),
 });
@@ -43,10 +38,6 @@ function getProofId(req: MedusaRequest): string {
   return parsed.data.id;
 }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
 interface MandatProof {
   id: string;
   status: string;
@@ -63,26 +54,6 @@ export async function PUT(
   res: MedusaResponse,
 ): Promise<void> {
   const { userId } = requireAdminContext(req);
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
-  const { id } = req.params;
-
-  const parsed = bodySchema.safeParse(req.body);
-  if (!parsed.success) {
-    const fields: Record<string, string> = {};
-    parsed.error.issues.forEach((i) => {
-      fields[i.path.join('.')] = i.message;
-    });
-    throw new PdValidationError('Données invalides', { fields });
-  }
-
-  if (parsed.data.status === 'rejected' && !parsed.data.rejection_reason) {
-    throw new PdValidationError('Un motif de rejet est requis', {
-      fields: { rejection_reason: 'Champ requis pour un rejet' },
-    });
-  }
-
-=======
   const id = getProofId(req);
 
   const parsed = bodySchema.safeParse(req.body);
@@ -92,27 +63,12 @@ export async function PUT(
     });
   }
 
-=======
-  const id = getProofId(req);
-
-  const parsed = bodySchema.safeParse(req.body);
-  if (!parsed.success) {
-    throw new PdValidationError('Données invalides', {
-      fields: validationFields(parsed.error),
-    });
-  }
-
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
   if (parsed.data.status === 'rejected' && !parsed.data.rejection_reason) {
     throw new PdValidationError('Un motif de rejet est requis', {
       fields: { rejection_reason: 'Champ requis pour un rejet' },
     });
   }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/mandats/[id]/route.ts
   const pdMandatService = req.scope.resolve<IPdMandatService>('pdMandatService');
   const adminId = userId as string;
 

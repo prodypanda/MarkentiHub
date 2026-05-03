@@ -14,11 +14,7 @@ import { UserRole } from '../../utils/constants';
 export interface PdJwtPayload {
   sub: string;
   store_id: string;
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/middlewares/authenticate-vendor.ts
-  role: UserRole;
-=======
   role?: UserRole;
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/middlewares/authenticate-vendor.ts
   iat?: number;
   exp?: number;
 }
@@ -38,8 +34,6 @@ function getJwtSecret(): string {
   return secret;
 }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/middlewares/authenticate-vendor.ts
-=======
 function isPdJwtPayload(value: unknown): value is PdJwtPayload {
   if (!value || typeof value !== 'object') {
     return false;
@@ -55,7 +49,6 @@ function isPdJwtPayload(value: unknown): value is PdJwtPayload {
   );
 }
 
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/middlewares/authenticate-vendor.ts
 export const authenticateVendor = async (
   req: MedusaRequest,
   _res: MedusaResponse,
@@ -79,15 +72,11 @@ export const authenticateVendor = async (
 
   let decoded: PdJwtPayload;
   try {
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/middlewares/authenticate-vendor.ts
-    decoded = jwt.verify(token, getJwtSecret()) as PdJwtPayload;
-=======
     const verified = jwt.verify(token, getJwtSecret());
     if (!isPdJwtPayload(verified)) {
       return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'Invalid token payload'));
     }
     decoded = verified;
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/middlewares/authenticate-vendor.ts
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       return next(new PdTokenExpiredError());

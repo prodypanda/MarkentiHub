@@ -24,13 +24,6 @@ import { createServiceLogger } from '../../../../../utils/logger';
 const logger = createServiceLogger('PresignedUrlRoute');
 
 const schema = z.object({
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
-  product_id: z.string().optional(),
-  filename: z.string().min(1).max(255),
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
   product_id: z.string().trim().min(1).max(128).optional(),
   filename: z
     .string()
@@ -38,10 +31,6 @@ const schema = z.object({
     .min(1)
     .max(255)
     .regex(/^[a-zA-Z0-9._-]+$/, 'Filename may only contain letters, numbers, dots, underscores, and hyphens'),
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
   content_type: z
     .string()
     .refine((v) => FILE_CONSTRAINTS.ALLOWED_IMAGE_TYPES.includes(v), {

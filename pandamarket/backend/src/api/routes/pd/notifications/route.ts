@@ -7,14 +7,6 @@
 // =============================================================================
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/notifications/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/notifications/route.ts
-
-import { requireStoreContext } from '../../../middlewares/auth-context';
-import { PdForbiddenError } from '../../../../utils/errors';
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/notifications/route.ts
 import { z } from 'zod';
 
 import { requireStoreContext } from '../../../middlewares/auth-context';
@@ -46,31 +38,6 @@ function validationFields(error: z.ZodError): Record<string, string> {
   });
   return fields;
 }
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/notifications/route.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/notifications/route.ts
-
-interface IPdNotificationService {
-  getUnreadCount(userId: string): Promise<number>;
-  getUserNotifications(userId: string, page: number, limit: number): Promise<unknown[]>;
-  markAllAsRead(userId: string): Promise<void>;
-}
-
-function firstQueryValue(value: unknown): string | undefined {
-  if (Array.isArray(value)) {
-    return typeof value[0] === 'string' ? value[0] : undefined;
-  }
-  return typeof value === 'string' ? value : undefined;
-}
-
-function parsePositiveInt(value: unknown, fallback: number, max: number): number {
-  const parsed = Number.parseInt(firstQueryValue(value) ?? '', 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback;
-  }
-  return Math.min(parsed, max);
-}
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/notifications/route.ts
 
 /**
  * GET /api/pd/notifications
@@ -83,16 +50,6 @@ export async function GET(
   const { userId } = requireStoreContext(req);
   if (!userId) throw new PdForbiddenError();
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/notifications/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/notifications/route.ts
-  const page = parsePositiveInt(req.query.page, 1, 10_000);
-  const limit = parsePositiveInt(req.query.limit, 20, 100);
-
-  // Check for special sub-routes via query
-  const action = firstQueryValue(req.query.action);
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/notifications/route.ts
   const parsed = querySchema.safeParse({
     page: firstQueryValue(req.query.page) ?? undefined,
     limit: firstQueryValue(req.query.limit) ?? undefined,
@@ -104,10 +61,6 @@ export async function GET(
     });
   }
   const { page, limit, action } = parsed.data;
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/notifications/route.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/notifications/route.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/notifications/route.ts
 
   const pdNotificationService = req.scope.resolve<IPdNotificationService>('pdNotificationService');
   if (action === 'unread-count') {

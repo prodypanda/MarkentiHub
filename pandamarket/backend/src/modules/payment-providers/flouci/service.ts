@@ -43,7 +43,6 @@ interface PdStoreWithFlouciConfig {
 interface IPdStoreService {
   listPdStores(args: { filters: { id: string } }): Promise<PdStoreWithFlouciConfig[]>;
 }
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
 
 type ProviderStatus =
   | 'authorized'
@@ -61,25 +60,6 @@ interface PaymentContextShape {
   session_data?: Record<string, unknown> | null;
 }
 
-=======
-
-type ProviderStatus =
-  | 'authorized'
-  | 'error'
-  | 'requires_more'
-  | 'pending'
-  | 'canceled'
-  | 'captured';
-
-interface PaymentContextShape {
-  amount?: number;
-  resource_id?: string;
-  cart?: { metadata?: Record<string, unknown> | null };
-  metadata?: Record<string, unknown> | null;
-  session_data?: Record<string, unknown> | null;
-}
-
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
 /**
  * FlouciPaymentProvider handles both escrow (platform keys) and direct
  * (vendor keys for Pro+ plans) payment sessions.
@@ -105,24 +85,9 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<Record<string
     const appSecret = isDirect && vendorKeys ? vendorKeys.secret_key : process.env.FLOUCI_APP_SECRET ?? '';
 
     if (!this.useRealApi && !isDirect) {
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
       if (process.env.PD_NODE_ENV === 'production') {
         throw new Error('PD_FLOUCI_ENABLED and FLOUCI_APP_TOKEN must be configured for production payments');
       }
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
-      if (process.env.PD_NODE_ENV === 'production') {
-        throw new Error('PD_FLOUCI_ENABLED and FLOUCI_APP_TOKEN must be configured for production payments');
-      }
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
-      if (process.env.PD_NODE_ENV === 'production') {
-        throw new Error('PD_FLOUCI_ENABLED and FLOUCI_APP_TOKEN must be configured for production payments');
-      }
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
       // Local dev / mocked mode — return a deterministic stub session.
       return {
         payment_id: `mock_flouci_${orderId}`,
@@ -164,22 +129,12 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<Record<string
       }).container_.resolve<IPdStoreService>('pdStoreService');
       const [store] = await storeService.listPdStores({ filters: { id: storeId } });
       if (!store) return { isDirect: false };
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-      if (!PLAN_LIMITS[store.subscription_plan]?.hasDirectPayment) return { isDirect: false };
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
       const plan = store.subscription_plan;
       if (!plan || !PLAN_LIMITS[plan]) {
         logger.error({ store_id: storeId }, 'Store has no valid subscription plan for direct payments');
         return { isDirect: false };
       }
       if (!PLAN_LIMITS[plan].hasDirectPayment) return { isDirect: false };
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
 
       const flouci = store.payment_config?.flouci;
       if (!flouci?.public_key || !flouci.secret_key_encrypted) return { isDirect: false };
@@ -196,24 +151,6 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<Record<string
       return { isDirect: false };
     }
   }
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-
-  async initiatePayment(context: PaymentContextShape): Promise<PaymentProviderSessionResponse> {
-    const amount = context.amount ?? 0;
-    const orderId = context.resource_id ?? `temp_${Date.now()}`;
-    const storeId =
-      (context.cart?.metadata as { store_id?: string } | undefined)?.store_id ??
-      (context.metadata as { store_id?: string } | undefined)?.store_id ??
-      (context.session_data as { store_id?: string } | undefined)?.store_id;
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
 
   async initiatePayment(context: PaymentContextShape): Promise<PaymentProviderSessionResponse> {
     const amount = context.amount ?? 0;
@@ -223,13 +160,6 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<Record<string
       (context.metadata as { store_id?: string } | undefined)?.store_id ??
       (context.session_data as { store_id?: string } | undefined)?.store_id;
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
-
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
     const { isDirect, vendorKeys } = await this.resolveVendorKeys(storeId);
     const session = await this.createFlouciPayment(amount, orderId, isDirect, vendorKeys);
 
@@ -252,24 +182,9 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<Record<string
     if (!paymentId) return { data: paymentSessionData, status: 'error' };
 
     if (!this.useRealApi) {
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
       if (process.env.PD_NODE_ENV === 'production') {
         return { data: paymentSessionData, status: 'error' };
       }
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
-      if (process.env.PD_NODE_ENV === 'production') {
-        return { data: paymentSessionData, status: 'error' };
-      }
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
-=======
-      if (process.env.PD_NODE_ENV === 'production') {
-        return { data: paymentSessionData, status: 'error' };
-      }
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/flouci/service.ts
       return { data: paymentSessionData, status: 'pending' };
     }
 

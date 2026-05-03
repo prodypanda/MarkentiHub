@@ -1,17 +1,12 @@
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
 import jwt from 'jsonwebtoken';
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-=======
 import { z } from 'zod';
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
 // import { sendEmail } from '../utils/email';
 import { createServiceLogger } from '../utils/logger';
 
 const logger = createServiceLogger('DigitalFulfillmentSubscriber');
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-=======
 const orderEventSchema = z.object({
   id: z.string().trim().min(1).max(128),
 });
@@ -19,7 +14,6 @@ const orderEventSchema = z.object({
 const productIdSchema = z.string().trim().min(1).max(128);
 const buyerSubjectSchema = z.string().trim().min(1).max(255);
 
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
 interface OrderItemLike {
   title?: string | null;
   product_id?: string | null;
@@ -37,14 +31,11 @@ interface ProductLike {
   metadata?: Record<string, unknown> | null;
 }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-=======
 interface DigitalDeliveryItem {
   title?: string | null;
   url: string;
 }
 
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
 interface IOrderModuleService {
   retrieveOrder(id: string, options: { relations: string[] }): Promise<OrderLike | null>;
 }
@@ -64,14 +55,6 @@ function getJwtSecret(): string {
 function getPublicApiBaseUrl(): string {
   const baseUrl =
     process.env.PD_PUBLIC_API_URL ??
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-    process.env.NEXT_PUBLIC_MEDUSA_URL ??
-    process.env.PD_STORE_CORS?.split(',')[0];
-  if (!baseUrl) {
-    throw new Error('PD_PUBLIC_API_URL or NEXT_PUBLIC_MEDUSA_URL must be set for digital delivery links');
-  }
-  return baseUrl.replace(/\/$/, '');
-=======
     process.env.NEXT_PUBLIC_MEDUSA_URL;
   if (baseUrl) {
     return baseUrl.replace(/\/$/, '');
@@ -88,22 +71,18 @@ function getPublicApiBaseUrl(): string {
 
 function isDigitalProduct(product: ProductLike): boolean {
   return product.metadata?.is_digital === true;
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
 }
 
 export default async function digitalFulfillmentSubscriber({
   event: { data },
   container,
 }: SubscriberArgs<{ id: string }>) {
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-=======
   const parsedEvent = orderEventSchema.safeParse(data);
   if (!parsedEvent.success) {
     logger.error({ issues: parsedEvent.error.issues }, 'Invalid order event payload for digital fulfillment');
     return;
   }
 
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
   const orderModuleService = container.resolve(Modules.ORDER) as unknown as IOrderModuleService;
   const productModuleService = container.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
 
@@ -123,15 +102,6 @@ export default async function digitalFulfillmentSubscriber({
       const product_id = parsedProductId.data;
 
       const product = await productModuleService.retrieveProduct(product_id);
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-      const isDigital = product.metadata?.is_digital;
-
-      if (isDigital) {
-        // Generate a token for the download
-        const downloadToken = jwt.sign(
-          {
-            sub: order.customer_id ?? order.email ?? order.id,
-=======
 
       if (isDigitalProduct(product)) {
         const parsedSubject = buyerSubjectSchema.safeParse(order.customer_id ?? order.email ?? order.id);
@@ -143,7 +113,6 @@ export default async function digitalFulfillmentSubscriber({
         const downloadToken = jwt.sign(
           {
             sub: parsedSubject.data,
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
             product_id,
             order_id: order.id,
           },
@@ -174,11 +143,7 @@ export default async function digitalFulfillmentSubscriber({
     }
 
   } catch (error) {
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/digital-fulfillment.ts
-    logger.error({ err: error, order_id: data.id }, 'Digital fulfillment failed');
-=======
     logger.error({ err: error, order_id: parsedEvent.data.id }, 'Digital fulfillment failed');
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/digital-fulfillment.ts
   }
 }
 

@@ -44,14 +44,6 @@ interface OrderLike {
   items?: OrderItemLike[] | null;
 }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-function isDirectPayment(store: PdStoreLike): boolean {
-  const plan = store.subscription_plan ?? SubscriptionPlan.Free;
-  const hasDirectPay = PLAN_LIMITS[plan]?.hasDirectPayment ?? false;
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
 function resolvePlan(store: PdStoreLike): SubscriptionPlan | null {
   const plan = store.subscription_plan;
   if (!plan || !PLAN_LIMITS[plan]) return null;
@@ -60,10 +52,6 @@ function resolvePlan(store: PdStoreLike): SubscriptionPlan | null {
 
 function isDirectPayment(store: PdStoreLike, plan: SubscriptionPlan): boolean {
   const hasDirectPay = PLAN_LIMITS[plan].hasDirectPayment;
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
   if (!hasDirectPay) return false;
   const cfg = store.payment_config ?? {};
   return Boolean(
@@ -72,19 +60,8 @@ function isDirectPayment(store: PdStoreLike, plan: SubscriptionPlan): boolean {
   );
 }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-function commissionRateFor(store: PdStoreLike): number {
-  const plan = store.subscription_plan ?? SubscriptionPlan.Free;
-  return PLAN_LIMITS[plan]?.commissionRate ?? 0.15;
-=======
 function commissionRateFor(plan: SubscriptionPlan): number {
   return PLAN_LIMITS[plan].commissionRate;
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
-=======
-function commissionRateFor(plan: SubscriptionPlan): number {
-  return PLAN_LIMITS[plan].commissionRate;
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
 }
 
 export default async function orderPlacedSubscriber({
@@ -131,12 +108,6 @@ export default async function orderPlacedSubscriber({
         continue;
       }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-      if (isDirectPayment(store)) {
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
       const plan = resolvePlan(store);
       if (!plan) {
         logger.error({ order_id: orderId, store_id: storeId }, 'Store has no valid subscription plan');
@@ -144,10 +115,6 @@ export default async function orderPlacedSubscriber({
       }
 
       if (isDirectPayment(store, plan)) {
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
         logger.info(
           { order_id: orderId, store_id: storeId, amount: grossAmount },
           'Direct-pay plan — wallet credit skipped (funds sent directly to vendor PSP)',
@@ -155,15 +122,7 @@ export default async function orderPlacedSubscriber({
         continue;
       }
 
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/subscribers/order-placed.ts
-      const commissionRate = commissionRateFor(store);
-=======
       const commissionRate = commissionRateFor(plan);
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
-=======
-      const commissionRate = commissionRateFor(plan);
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/subscribers/order-placed.ts
       await pdWalletService.creditSale(storeId, grossAmount, commissionRate, orderId);
 
       logger.info(

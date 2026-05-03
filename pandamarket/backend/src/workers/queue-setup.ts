@@ -1,9 +1,6 @@
 import { Queue } from 'bullmq';
 
-const connection = {
-  host: process.env.PD_REDIS_HOST || 'localhost',
-  port: parseInt(process.env.PD_REDIS_PORT || '6379', 10),
-};
+import { getQueueOptions, QUEUE_NAMES } from './config';
 
-export const imageCompressionQueue = new Queue('image-compression', { connection });
-export const seoGenerationQueue = new Queue('seo-generation', { connection });
+export const imageCompressionQueue = new Queue(QUEUE_NAMES.imageCompression, getQueueOptions());
+export const seoGenerationQueue = new Queue(QUEUE_NAMES.seoGeneration, getQueueOptions());

@@ -5,14 +5,6 @@
 // =============================================================================
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
-
-import { requireStoreContext } from '../../../../../middlewares/auth-context';
-import { PdNotFoundError, PdNotOwnerError } from '../../../../../../utils/errors';
-=======
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
 import { z } from 'zod';
 
 import { requireStoreContext } from '../../../../../middlewares/auth-context';
@@ -39,10 +31,6 @@ function getKeyId(req: MedusaRequest): string {
   }
   return parsed.data.id;
 }
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
-=======
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
 
 interface ApiKeyRecord {
   id: string;
@@ -59,15 +47,7 @@ export const POST = async (
   res: MedusaResponse,
 ): Promise<void> => {
   const { storeId } = requireStoreContext(req);
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
-<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
-  const keyId = req.params.id;
-=======
   const keyId = getKeyId(req);
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
-=======
-  const keyId = getKeyId(req);
->>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/api-keys/[id]/revoke/route.ts
 
   const apiKeyService = req.scope.resolve<IPdApiKeyService>('pdApiKeyService');
   const [key] = await apiKeyService.listApiKeys({ filters: { id: keyId } });
