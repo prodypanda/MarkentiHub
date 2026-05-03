@@ -1,121 +1,221 @@
-// @ts-nocheck
-import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { z } from 'zod';
-import { PdBadRequestError } from '../../../../utils/errors';
-import { Modules } from '@medusajs/framework/utils';
-import { IPdSubscriptionModuleService } from '../../../../modules/pd-subscription/types';
-import { IPdStoreModuleService } from '../../../../modules/pd-store/types';
+// pandamarket/backend/src/api/routes/pd/products/route.ts
+// =============================================================================
+// PandaMarket — Product Collection Routes
+// GET  /api/pd/products?store_id=...   → Public product listing (published only)
+// POST /api/pd/products                → Authenticated vendor creates a product
+//                                        store_id is derived from JWT; unverified
+//                                        vendors create draft (admin-approved),
+//                                        verified vendors publish instantly.
+// =============================================================================
 
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import { Modules } from '@medusajs/framework/utils';
+import { z } from 'zod';
+
+import { requireStoreContext } from '../../../middlewares/auth-context';
+import {
+  PdStoreNotFoundError,
+  PdStoreSuspendedError,
+  PdValidationError,
+} from '../../../../utils/errors';
+import {
+  StoreStatus,
+  SubscriptionPlan,
+  ProductType,
+  PD_EVENTS,
+} from '../../../../utils/constants';
+import { createServiceLogger } from '../../../../utils/logger';
+
+const logger = createServiceLogger('ProductsRoute');
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0] : undefined;
+  }
+  return typeof value === 'string' ? value : undefined;
+}
+
+function validationFields(error: z.ZodError): Record<string, string> {
+  const fields: Record<string, string> = {};
+  error.issues.forEach((issue) => {
+    fields[issue.path.join('.')] = issue.message;
+  });
+  return fields;
+}
+
+const listProductsQuerySchema = z.object({
+  store_id: z.string().trim().min(1).max(128).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+interface PdStoreLike {
+  id: string;
+  is_verified: boolean;
+  status: StoreStatus;
+  subscription_plan: SubscriptionPlan;
+}
+
+interface IPdStoreService {
+  listPdStores(args: { filters: { id: string } }): Promise<PdStoreLike[]>;
+}
+
+interface IPdSubscriptionService {
+  assertCanCreateProduct(plan: SubscriptionPlan, currentCount: number): void;
+  assertCanUploadImage(plan: SubscriptionPlan, currentCount: number): void;
+}
+
+/**
+ * GET /api/pd/products — public listing of published products.
+ * Filter by store_id if provided. No auth required.
+ */
 export const GET = async (
   req: MedusaRequest,
   res: MedusaResponse,
-) => {
-  const storeId = req.query.store_id as string;
-  if (!storeId) {
-    throw new PdBadRequestError('store_id is required');
+): Promise<void> => {
+  const parsed = listProductsQuerySchema.safeParse({
+    store_id: firstQueryValue(req.query.store_id),
+    offset: firstQueryValue(req.query.offset) ?? undefined,
+    limit: firstQueryValue(req.query.limit) ?? undefined,
+  });
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+  }
+  const { store_id: storeId, offset, limit } = parsed.data;
+
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as {
+    listAndCountProducts: (
+      where: Record<string, unknown>,
+      opts: Record<string, unknown>,
+    ) => Promise<[unknown[], number]>;
+  };
+
+  const filter: Record<string, unknown> = { status: 'published' };
+  if (storeId) {
+    (filter as { 'metadata.store_id'?: string })['metadata.store_id'] = storeId;
   }
 
-  const productModuleService = req.scope.resolve(Modules.PRODUCT);
+  const [products, count] = await productModuleService.listAndCountProducts(filter, {
+    select: ['id', 'title', 'description', 'status', 'thumbnail', 'metadata', 'created_at'],
+    relations: ['variants', 'categories'],
+    skip: offset,
+    take: limit,
+  });
 
-  // Note: in Medusa v2, you can associate products to a store via an external link table 
-  // or by adding a custom field (metadata or actual table).
-  // For PandaMarket, we will query products where metadata.store_id = storeId
-  // or using the Medusa API depending on how we extended it.
-  
-  // As a fast implementation for MVP, we rely on metadata for store association
-  const [products, count] = await productModuleService.listAndCountProducts(
-    {
-      // @ts-ignore - Metadata filtering depends on the exact Medusa config, but this is the standard pattern
-      "metadata.store_id": storeId,
-    },
-    {
-      select: ["id", "title", "description", "status", "thumbnail", "metadata", "created_at"],
-      relations: ["variants", "categories"],
-      skip: parseInt(req.query.offset as string) || 0,
-      take: parseInt(req.query.limit as string) || 50,
-    }
-  );
-
-  res.json({ products, count, offset: req.query.offset || 0, limit: req.query.limit || 50 });
+  res.json({ products, count, offset, limit });
 };
 
+const createProductSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  price: z.number().finite().nonnegative(),
+  stock: z.number().int().nonnegative(),
+  images: z.array(z.string().url()).max(50).optional(),
+  category: z.string().max(100).optional(),
+  product_type: z.nativeEnum(ProductType).optional().default(ProductType.Physical),
+});
+
+/**
+ * POST /api/pd/products — authenticated vendor creates a product.
+ * - store_id is ALWAYS derived from JWT; never trusted from body.
+ * - Quota + image-count checks enforced.
+ * - Unverified vendors create draft products for admin approval.
+ */
 export const POST = async (
   req: MedusaRequest,
   res: MedusaResponse,
-) => {
-  const schema = z.object({
-    store_id: z.string(),
-    title: z.string().min(1),
-    description: z.string().optional(),
-    price: z.number().min(0), // In a real setup, we map this to a variant and a price set
-    stock: z.number().min(0),
-    images: z.array(z.string()).optional(),
-    category: z.string().optional(),
-    is_digital: z.boolean().optional().default(false),
-  });
+): Promise<void> => {
+  const { storeId } = requireStoreContext(req);
 
-  const parsed = schema.safeParse(req.body);
+  const parsed = createProductSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new PdBadRequestError('Invalid request body', parsed.error.format());
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
   }
-
   const data = parsed.data;
 
-  // 1. Resolve services
-  const storeModuleService: IPdStoreModuleService = req.scope.resolve('pdStoreModuleService');
-  const subscriptionModuleService: IPdSubscriptionModuleService = req.scope.resolve('pdSubscriptionModuleService');
-  const productModuleService = req.scope.resolve(Modules.PRODUCT);
+  const storeService = req.scope.resolve<IPdStoreService>('pdStoreService');
+  const subscriptionService = req.scope.resolve<IPdSubscriptionService>('pdSubscriptionService');
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as {
+    listAndCountProducts: (
+      where: Record<string, unknown>,
+      opts: Record<string, unknown>,
+    ) => Promise<[unknown[], number]>;
+    createProducts: (input: unknown[]) => Promise<Array<{ id: string }>>;
+  };
+  const eventBus = req.scope.resolve(Modules.EVENT_BUS) as unknown as {
+    emit: (args: { name: string; data: Record<string, unknown> }) => Promise<void>;
+  };
 
-  // 2. Verify store exists
-  const store = await storeModuleService.retrieveStore(data.store_id);
-  
-  // 3. Quota Enforcement: Check if vendor can create a new product
-  // Get current product count
-  const [, productCount] = await productModuleService.listAndCountProducts({
-    // @ts-ignore
-    "metadata.store_id": data.store_id,
-  });
+  const [store] = await storeService.listPdStores({ filters: { id: storeId } });
+  if (!store) throw new PdStoreNotFoundError(storeId);
+  if (store.status === StoreStatus.Suspended) throw new PdStoreSuspendedError(storeId);
 
-  // This will throw a PdProductQuotaExceededError if limit is reached
-  await subscriptionModuleService.canCreateProduct(data.store_id, productCount);
+  // Quota: current product count for this vendor.
+  const [, productCount] = await productModuleService.listAndCountProducts(
+    { 'metadata.store_id': storeId },
+    { skip: 0, take: 1 },
+  );
+  subscriptionService.assertCanCreateProduct(store.subscription_plan, productCount);
 
-  // Also enforce image quota
-  if (data.images && data.images.length > 0) {
-    await subscriptionModuleService.canUploadImage(data.store_id, data.images.length);
+  // Image quota per product (already zero existing images on creation).
+  const newImageCount = data.images?.length ?? 0;
+  if (newImageCount > 0) {
+    subscriptionService.assertCanUploadImage(store.subscription_plan, newImageCount);
   }
 
-  // 4. Create the product via Medusa core
-  const product = await productModuleService.createProducts([
+  const isDigital = data.product_type === ProductType.Digital;
+  const shouldPublishImmediately = store.is_verified;
+  const productStatus = shouldPublishImmediately ? 'published' : 'draft';
+
+  const [product] = await productModuleService.createProducts([
     {
       title: data.title,
       description: data.description,
-      status: 'published', // Default to published
-      thumbnail: data.images && data.images.length > 0 ? data.images[0] : null,
-      images: data.images ? data.images.map(url => ({ url })) : [],
+      status: productStatus,
+      thumbnail: data.images?.[0] ?? null,
+      images: (data.images ?? []).map((url) => ({ url })),
       metadata: {
-        store_id: data.store_id,
+        store_id: storeId,
         category: data.category,
-        is_digital: data.is_digital,
+        product_type: data.product_type,
+        is_digital: isDigital,
         price: data.price,
         stock: data.stock,
       },
-      // In Medusa v2, prices and inventory are handled via separate modules (Pricing / Inventory).
-      // For a simplified SaaS/MaaS approach, we can attach this to metadata initially, 
-      // or we'd need to create default variants, price sets, and inventory items.
-      options: [
-        { title: 'Default Option' }
-      ],
+      options: [{ title: 'Default Option' }],
       variants: [
         {
           title: 'Default Variant',
-          manage_inventory: !data.is_digital, // Digital items don't need strict inventory usually
-          options: { 'Default Option': 'Default' }
-        }
-      ]
-    }
+          manage_inventory: !isDigital,
+          options: { 'Default Option': 'Default' },
+        },
+      ],
+    },
   ]);
 
-  // TODO: Create Price Set and Inventory Item for the variant created above
+  if (shouldPublishImmediately) {
+    await eventBus.emit({
+      name: PD_EVENTS.PRODUCT_PUBLISHED,
+      data: { product_id: product.id, store_id: storeId },
+    });
+  } else {
+    await eventBus.emit({
+      name: PD_EVENTS.PRODUCT_PENDING_APPROVAL,
+      data: { product_id: product.id, store_id: storeId },
+    });
+  }
 
-  res.json({ product: product[0] });
+  logger.info(
+    { store_id: storeId, product_id: product.id, status: productStatus },
+    'Product created',
+  );
+
+  res.status(201).json({
+    product,
+    requires_approval: !shouldPublishImmediately,
+  });
 };

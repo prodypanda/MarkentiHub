@@ -1,43 +1,97 @@
-// @ts-nocheck
-import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+// pandamarket/backend/src/api/routes/pd/upload/presigned-url/route.ts
+// =============================================================================
+// PandaMarket — Presigned Upload URL
+// Returns a time-limited S3 presigned URL for uploading a product image.
+// store_id is ALWAYS derived from JWT; if product_id is supplied it must
+// belong to the authenticated store.
+// =============================================================================
+
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import { Modules } from '@medusajs/framework/utils';
 import { z } from 'zod';
+
 import { getProductImageUploadUrl } from '../../../../../utils/s3';
-import { PdBadRequestError } from '../../../../../utils/errors';
+import { requireStoreContext } from '../../../../middlewares/auth-context';
+import {
+  PdBadRequestError,
+  PdNotOwnerError,
+  PdValidationError,
+} from '../../../../../utils/errors';
 import { generatePdId } from '../../../../../utils/crypto';
+import { FILE_CONSTRAINTS } from '../../../../../utils/constants';
+import { createServiceLogger } from '../../../../../utils/logger';
+
+const logger = createServiceLogger('PresignedUrlRoute');
+
+const schema = z.object({
+  product_id: z.string().trim().min(1).max(128).optional(),
+  filename: z
+    .string()
+    .trim()
+    .min(1)
+    .max(255)
+    .regex(/^[a-zA-Z0-9._-]+$/, 'Filename may only contain letters, numbers, dots, underscores, and hyphens'),
+  content_type: z
+    .string()
+    .refine((v) => FILE_CONSTRAINTS.ALLOWED_IMAGE_TYPES.includes(v), {
+      message: `Only ${FILE_CONSTRAINTS.ALLOWED_IMAGE_TYPES.join(', ')} are allowed`,
+    }),
+  file_size: z.number().int().positive().max(FILE_CONSTRAINTS.MAX_IMAGE_SIZE).optional(),
+});
+
+interface ProductLike {
+  id: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface IProductModuleService {
+  retrieveProduct(id: string): Promise<ProductLike>;
+}
 
 export const POST = async (
   req: MedusaRequest,
   res: MedusaResponse,
-) => {
-  const schema = z.object({
-    store_id: z.string(),
-    product_id: z.string().optional(),
-    filename: z.string(),
-    content_type: z.string().refine((val) => val.startsWith('image/'), {
-      message: 'Only images are allowed',
-    }),
-  });
+): Promise<void> => {
+  const { storeId } = requireStoreContext(req);
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    throw new PdBadRequestError('Invalid request body', parsed.error.format());
+    const fields: Record<string, string> = {};
+    parsed.error.issues.forEach((issue) => {
+      fields[issue.path.join('.')] = issue.message;
+    });
+    throw new PdValidationError('Données invalides', { fields });
   }
 
-  const { store_id, filename, content_type } = parsed.data;
-  
-  // If no product_id is provided, generate a temporary one for the upload path
-  const product_id = parsed.data.product_id || generatePdId('tmp_prod');
+  const { filename, content_type } = parsed.data;
+  let productId = parsed.data.product_id;
+
+  // If product_id is provided, verify the authenticated store owns it.
+  if (productId) {
+    const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
+    let product: ProductLike;
+    try {
+      product = await productModuleService.retrieveProduct(productId);
+    } catch {
+      throw new PdNotOwnerError(productId);
+    }
+    const owner = (product.metadata ?? {})['store_id'];
+    if (owner !== storeId) {
+      throw new PdNotOwnerError(productId);
+    }
+  } else {
+    productId = generatePdId('tmp_prod');
+  }
 
   try {
-    const result = await getProductImageUploadUrl(
-      store_id,
-      product_id,
-      filename,
-      content_type,
+    const result = await getProductImageUploadUrl(storeId, productId, filename, content_type);
+    logger.info(
+      { store_id: storeId, product_id: productId, filename, content_type },
+      'Presigned URL issued',
     );
-
     res.json(result);
-  } catch (error) {
-    throw new PdBadRequestError('Failed to generate presigned URL');
+  } catch (err) {
+    logger.error({ err, store_id: storeId, product_id: productId }, 'Failed to presign URL');
+    throw new PdBadRequestError('Impossible de générer l\'URL d\'upload');
   }
 };

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/modules/pd-credits/service.ts
 import { MedusaService } from '@medusajs/framework/utils';
 import VendorCredits from './models/vendor-credits';
@@ -8,17 +7,51 @@ import { createServiceLogger } from '../../utils/logger';
 
 const logger = createServiceLogger('CreditService');
 
+interface VendorCreditsRecord {
+  id: string;
+  store_id: string;
+  ai_tokens_balance: number;
+  ai_tokens_used: number;
+  ai_tokens_purchased: number;
+  last_refill_at?: string | Date | null;
+}
+
+interface VendorCreditsCreateInput {
+  store_id: string;
+  ai_tokens_balance: number;
+  ai_tokens_used: number;
+  ai_tokens_purchased: number;
+  last_refill_at: string;
+}
+
+interface VendorCreditsUpdateInput {
+  id: string;
+  ai_tokens_balance?: number;
+  ai_tokens_used?: number;
+  ai_tokens_purchased?: number;
+}
+
+interface PdCreditGeneratedMethods {
+  createVendorCredits(input: VendorCreditsCreateInput): Promise<VendorCreditsRecord>;
+  updateVendorCredits(input: VendorCreditsUpdateInput): Promise<VendorCreditsRecord>;
+  listVendorCredits(args: { filters: { store_id: string } }): Promise<VendorCreditsRecord[]>;
+}
+
+function generated(service: PdCreditService): PdCreditGeneratedMethods {
+  return service as unknown as PdCreditGeneratedMethods;
+}
+
 class PdCreditService extends MedusaService({
   VendorCredits,
 }) {
   /**
    * Initialize credits for a new store
    */
-  async initializeCredits(storeId: string, plan: SubscriptionPlan) {
+  async initializeCredits(storeId: string, plan: SubscriptionPlan): Promise<VendorCreditsRecord> {
     const limits = PLAN_LIMITS[plan];
     const initialTokens = limits.aiTokensIncluded === -1 ? 0 : limits.aiTokensIncluded;
 
-    return this.createVendorCredits({
+    return generated(this).createVendorCredits({
       store_id: storeId,
       ai_tokens_balance: initialTokens,
       ai_tokens_used: 0,
@@ -60,7 +93,7 @@ class PdCreditService extends MedusaService({
       throw new PdInsufficientTokensError(amount, credits.ai_tokens_balance);
     }
 
-    await this.updateVendorCredits({
+    await generated(this).updateVendorCredits({
       id: credits.id,
       ai_tokens_balance: credits.ai_tokens_balance - amount,
       ai_tokens_used: credits.ai_tokens_used + amount,
@@ -75,7 +108,7 @@ class PdCreditService extends MedusaService({
   async addTokens(storeId: string, amount: number): Promise<void> {
     const credits = await this.getCreditsByStoreId(storeId);
 
-    await this.updateVendorCredits({
+    await generated(this).updateVendorCredits({
       id: credits.id,
       ai_tokens_balance: credits.ai_tokens_balance + amount,
       ai_tokens_purchased: credits.ai_tokens_purchased + amount,
@@ -87,8 +120,8 @@ class PdCreditService extends MedusaService({
   /**
    * Get credits by store ID
    */
-  async getCreditsByStoreId(storeId: string) {
-    const [credits] = await this.listVendorCredits({
+  async getCreditsByStoreId(storeId: string): Promise<VendorCreditsRecord> {
+    const [credits] = await generated(this).listVendorCredits({
       filters: { store_id: storeId },
     });
 

@@ -1,6 +1,34 @@
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
 import { notifyVendor } from '../utils/websocket';
+import { createServiceLogger } from '../utils/logger';
+
+const logger = createServiceLogger('AiSeoSubscriber');
+
+interface ProductLike {
+  id: string;
+  title: string;
+  description?: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface IProductModuleService {
+  retrieveProduct(id: string): Promise<ProductLike | null>;
+  updateProducts(id: string, data: Record<string, unknown>): Promise<unknown>;
+}
+
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string }>;
+    };
+  }>;
+}
+
+interface SeoPayload {
+  title?: unknown;
+  description?: unknown;
+}
 
 export default async function aiSeoSubscriber({
   event: { data },
@@ -8,7 +36,7 @@ export default async function aiSeoSubscriber({
 }: SubscriberArgs<{ product_id: string; store_id: string }>) {
   const { product_id, store_id } = data;
 
-  const productModuleService = container.resolve(Modules.PRODUCT);
+  const productModuleService = container.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
   
   try {
     const product = await productModuleService.retrieveProduct(product_id);
@@ -40,18 +68,24 @@ Respond in the following JSON format ONLY, nothing else:
       });
 
       if (response.ok) {
-        const result: any = await response.json();
+        const result = (await response.json()) as GeminiResponse;
         try {
-          const content = result.candidates[0].content.parts[0].text;
-          const parsed = JSON.parse(content.replace(/```json/g, '').replace(/```/g, '').trim());
-          seoTitle = parsed.title;
-          seoDescription = parsed.description;
+          const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
+          const parsed = JSON.parse((content ?? '{}').replace(/```json/g, '').replace(/```/g, '').trim()) as SeoPayload;
+          if (typeof parsed.title === 'string') {
+            seoTitle = parsed.title;
+          }
+          if (typeof parsed.description === 'string') {
+            seoDescription = parsed.description;
+          }
         } catch (parseError) {
-          console.error('Failed to parse Gemini output:', parseError);
+          logger.warn({ err: parseError, product_id, store_id }, 'Failed to parse Gemini output');
         }
       } else {
-        console.error('Gemini API Error:', await response.text());
+        logger.error({ product_id, store_id, status: response.status, body: await response.text() }, 'Gemini API error');
       }
+    } else if (process.env.PD_NODE_ENV === 'production') {
+      throw new Error('GEMINI_API_KEY must be set for AI SEO generation in production');
     } else {
       // Mock delay if no key is provided (for local testing)
       await new Promise(r => setTimeout(r, 2000));
@@ -60,7 +94,7 @@ Respond in the following JSON format ONLY, nothing else:
     // 2. Update the product with SEO metadata
     await productModuleService.updateProducts(product_id, {
       metadata: {
-        ...(product.metadata as Record<string, any> || {}),
+        ...(product.metadata ?? {}),
         seo_title: seoTitle,
         seo_description: seoDescription,
         seo_generated_at: new Date().toISOString(),
@@ -69,10 +103,10 @@ Respond in the following JSON format ONLY, nothing else:
 
     // 3. Emit real-time WebSocket notification to the vendor
     notifyVendor(store_id, 'SEO_COMPLETE', { product_id, seoTitle, seoDescription });
-    console.log(`[AI Worker] SEO generated for product ${product_id}`);
+    logger.info({ product_id, store_id }, 'SEO generated for product');
 
   } catch (error) {
-    console.error('[AI Worker] SEO Generation failed:', error);
+    logger.error({ err: error, product_id, store_id }, 'SEO generation failed');
     // In a robust system, refund the token here
   }
 }

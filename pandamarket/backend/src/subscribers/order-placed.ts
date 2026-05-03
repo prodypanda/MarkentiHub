@@ -1,55 +1,145 @@
+// pandamarket/backend/src/subscribers/order-placed.ts
+// =============================================================================
+// PandaMarket — Order Placed Subscriber
+// Credits each vendor's wallet (escrow mode) using the commission rate from
+// their subscription plan. Direct-pay plans skip the credit (funds already
+// landed directly on the vendor's PSP account).
+// =============================================================================
+
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
+
+import { SubscriptionPlan, PLAN_LIMITS, PD_EVENTS } from '../utils/constants';
+import { createServiceLogger } from '../utils/logger';
+
+const logger = createServiceLogger('OrderPlacedSubscriber');
+
+interface PdStoreLike {
+  id: string;
+  subscription_plan?: SubscriptionPlan | null;
+  payment_config?: Record<string, unknown> | null;
+}
+
+interface IPdWalletService {
+  creditSale(
+    storeId: string,
+    grossAmount: number,
+    commissionRate: number,
+    orderId: string,
+  ): Promise<void>;
+}
+
+interface IPdStoreService {
+  listPdStores(args: { filters: { id: string } }): Promise<PdStoreLike[]>;
+}
+
+interface OrderItemLike {
+  unit_price: number;
+  quantity: number;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface OrderLike {
+  id: string;
+  items?: OrderItemLike[] | null;
+}
+
+function resolvePlan(store: PdStoreLike): SubscriptionPlan | null {
+  const plan = store.subscription_plan;
+  if (!plan || !PLAN_LIMITS[plan]) return null;
+  return plan;
+}
+
+function isDirectPayment(store: PdStoreLike, plan: SubscriptionPlan): boolean {
+  const hasDirectPay = PLAN_LIMITS[plan].hasDirectPayment;
+  if (!hasDirectPay) return false;
+  const cfg = store.payment_config ?? {};
+  return Boolean(
+    (cfg as { flouci?: unknown; konnect?: unknown }).flouci ||
+      (cfg as { flouci?: unknown; konnect?: unknown }).konnect,
+  );
+}
+
+function commissionRateFor(plan: SubscriptionPlan): number {
+  return PLAN_LIMITS[plan].commissionRate;
+}
 
 export default async function orderPlacedSubscriber({
   event: { data },
   container,
-}: SubscriberArgs<{ id: string }>) {
+}: SubscriberArgs<{ id: string }>): Promise<void> {
   const orderModuleService = container.resolve(Modules.ORDER);
-  const pdWalletService: any = container.resolve('pdWalletService');
-  const storeModuleService: any = container.resolve('pdStoreModuleService');
-  
+  const pdWalletService = container.resolve<IPdWalletService>('pdWalletService');
+  const pdStoreService = container.resolve<IPdStoreService>('pdStoreService');
+
   const orderId = data.id;
-  const order = await orderModuleService.retrieveOrder(orderId, {
+  const order = (await orderModuleService.retrieveOrder(orderId, {
     relations: ['items', 'payment_collections'],
-  });
+  })) as OrderLike | null;
 
-  if (!order) return;
-
-  // Split order logic:
-  // In PandaMarket MVP, we assume 1 order = 1 store. 
-  // If multi-vendor cart is implemented, order items dictate the store distribution.
-  // We'll calculate the total per store and process the escrow.
-
-  // Group items by store_id
-  const storeTotals: Record<string, number> = {};
-  for (const item of order.items || []) {
-    // metadata is where we store the store_id of the product
-    const storeId = (item.metadata as Record<string, any>)?.store_id;
-    if (storeId) {
-      if (!storeTotals[storeId]) storeTotals[storeId] = 0;
-      // unit_price * quantity
-      storeTotals[storeId] += (item.unit_price * item.quantity);
-    }
+  if (!order || !order.items || order.items.length === 0) {
+    logger.debug({ order_id: orderId }, 'Order not found or has no items; skipping');
+    return;
   }
 
-  // Determine if payment was direct or escrow
-  // A payment provider like 'pd-flouci' or 'pd-konnect' (without vendor keys) goes to Hub.
-  // A direct payment goes straight to vendor. For MVP, we assume all are Escrow unless
-  // we specifically implement Direct.
-  
-  // For each store involved in the order, process escrow
-  for (const [storeId, amount] of Object.entries(storeTotals)) {
-    // 1. Check if vendor is in Direct mode
-    const store = await storeModuleService.retrieveStore(storeId);
-    // Let's check plan (in a real scenario, use pdSubscriptionService to verify feature access)
-    // For now we assume if it's not direct, it's escrow.
-    const isDirect = store.payment_config?.flouci_public_key ? true : false;
+  // Group totals by store_id from line-item metadata.
+  const storeTotals = new Map<string, number>();
+  for (const item of order.items) {
+    const meta = (item.metadata ?? {}) as { store_id?: string };
+    const storeId = meta.store_id;
+    if (!storeId) continue;
+    const subtotal = (item.unit_price ?? 0) * (item.quantity ?? 0);
+    storeTotals.set(storeId, (storeTotals.get(storeId) ?? 0) + subtotal);
+  }
 
-    if (!isDirect) {
-      // 2. Escrow Mode: Credit wallet minus commission
-      const commissionRate = store.payment_config?.commission_rate || 0.15; // 15% default
-      await pdWalletService.processSale(storeId, amount, commissionRate, orderId);
+  if (storeTotals.size === 0) {
+    logger.warn(
+      { order_id: orderId },
+      'Order placed but no items carried a store_id in metadata; wallet not credited',
+    );
+    return;
+  }
+
+  for (const [storeId, grossAmount] of storeTotals) {
+    try {
+      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      if (!store) {
+        logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
+        continue;
+      }
+
+      const plan = resolvePlan(store);
+      if (!plan) {
+        logger.error({ order_id: orderId, store_id: storeId }, 'Store has no valid subscription plan');
+        continue;
+      }
+
+      if (isDirectPayment(store, plan)) {
+        logger.info(
+          { order_id: orderId, store_id: storeId, amount: grossAmount },
+          'Direct-pay plan — wallet credit skipped (funds sent directly to vendor PSP)',
+        );
+        continue;
+      }
+
+      const commissionRate = commissionRateFor(plan);
+      await pdWalletService.creditSale(storeId, grossAmount, commissionRate, orderId);
+
+      logger.info(
+        {
+          order_id: orderId,
+          store_id: storeId,
+          gross: grossAmount,
+          commission_rate: commissionRate,
+          event: PD_EVENTS.ORDER_PLACED,
+        },
+        'Wallet credited for order',
+      );
+    } catch (err) {
+      logger.error(
+        { err, order_id: orderId, store_id: storeId },
+        'Failed to credit wallet for order item',
+      );
     }
   }
 }

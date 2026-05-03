@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/api/routes/pd/notifications/route.ts
 // =============================================================================
 // PandaMarket — Notification Routes
@@ -8,7 +7,37 @@
 // =============================================================================
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { PdForbiddenError } from '../../../../utils/errors';
+import { z } from 'zod';
+
+import { requireStoreContext } from '../../../middlewares/auth-context';
+import { PdForbiddenError, PdValidationError } from '../../../../utils/errors';
+
+const querySchema = z.object({
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  action: z.enum(['unread-count']).optional(),
+});
+
+interface IPdNotificationService {
+  getUnreadCount(userId: string): Promise<number>;
+  getUserNotifications(userId: string, page: number, limit: number): Promise<unknown[]>;
+  markAllAsRead(userId: string): Promise<void>;
+}
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0] : undefined;
+  }
+  return typeof value === 'string' ? value : undefined;
+}
+
+function validationFields(error: z.ZodError): Record<string, string> {
+  const fields: Record<string, string> = {};
+  error.issues.forEach((issue) => {
+    fields[issue.path.join('.')] = issue.message;
+  });
+  return fields;
+}
 
 /**
  * GET /api/pd/notifications
@@ -18,23 +47,28 @@ export async function GET(
   req: MedusaRequest,
   res: MedusaResponse,
 ): Promise<void> {
-  const userId = (req as Record<string, unknown>).pd_user_id as string;
+  const { userId } = requireStoreContext(req);
   if (!userId) throw new PdForbiddenError();
 
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
+  const parsed = querySchema.safeParse({
+    page: firstQueryValue(req.query.page) ?? undefined,
+    limit: firstQueryValue(req.query.limit) ?? undefined,
+    action: firstQueryValue(req.query.action),
+  });
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+  }
+  const { page, limit, action } = parsed.data;
 
-  // Check for special sub-routes via query
-  const action = req.query.action as string;
-
+  const pdNotificationService = req.scope.resolve<IPdNotificationService>('pdNotificationService');
   if (action === 'unread-count') {
-    const pdNotificationService = req.scope.resolve('pdNotificationService');
     const count = await pdNotificationService.getUnreadCount(userId);
     res.json({ unread_count: count });
     return;
   }
 
-  const pdNotificationService = req.scope.resolve('pdNotificationService');
   const notifications = await pdNotificationService.getUserNotifications(userId, page, limit);
 
   res.json({ notifications, page, limit });
@@ -48,10 +82,10 @@ export async function PUT(
   req: MedusaRequest,
   res: MedusaResponse,
 ): Promise<void> {
-  const userId = (req as Record<string, unknown>).pd_user_id as string;
+  const { userId } = requireStoreContext(req);
   if (!userId) throw new PdForbiddenError();
 
-  const pdNotificationService = req.scope.resolve('pdNotificationService');
+  const pdNotificationService = req.scope.resolve<IPdNotificationService>('pdNotificationService');
   await pdNotificationService.markAllAsRead(userId);
 
   res.json({ success: true, message: 'Toutes les notifications ont été marquées comme lues' });

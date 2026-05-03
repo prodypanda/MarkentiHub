@@ -21,6 +21,83 @@ const logger = createServiceLogger('WalletService');
 
 const MIN_WITHDRAWAL_AMOUNT = 10; // 10 TND minimum withdrawal
 
+type PayoutModeValue = 'automatic' | 'on_demand';
+
+interface VendorWalletRecord {
+  id: string;
+  store_id: string;
+  balance: number;
+  pending_balance: number;
+  total_earned: number;
+  total_commission_paid: number;
+  total_withdrawn: number;
+  payout_mode: PayoutModeValue;
+  retention_days: number;
+  bank_name?: string | null;
+  bank_rib?: string | null;
+}
+
+interface VendorWalletCreateInput {
+  store_id: string;
+  balance: number;
+  pending_balance: number;
+  total_earned: number;
+  total_commission_paid: number;
+  total_withdrawn: number;
+  payout_mode: PayoutModeValue;
+  retention_days: number;
+}
+
+interface VendorWalletUpdateInput {
+  id: string;
+  balance?: number;
+  pending_balance?: number;
+  total_earned?: number;
+  total_commission_paid?: number;
+  total_withdrawn?: number;
+}
+
+interface WalletTransactionRecord {
+  id: string;
+  wallet_id: string;
+  type: WalletTransactionType;
+  amount: number;
+  balance_after: number;
+  description: string;
+  reference_id?: string | null;
+  reference_type?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+interface WalletTransactionCreateInput {
+  wallet_id: string;
+  type: WalletTransactionType;
+  amount: number;
+  balance_after: number;
+  description: string;
+  reference_id: string | null;
+  reference_type: string;
+}
+
+interface WalletTransactionListArgs {
+  filters: { wallet_id: string };
+  skip: number;
+  take: number;
+  order: { created_at: 'ASC' | 'DESC' };
+}
+
+interface PdWalletGeneratedMethods {
+  createVendorWallets(input: VendorWalletCreateInput): Promise<VendorWalletRecord>;
+  updateVendorWallets(input: VendorWalletUpdateInput): Promise<VendorWalletRecord>;
+  listVendorWallets(args: { filters: { store_id: string } }): Promise<VendorWalletRecord[]>;
+  createWalletTransactions(input: WalletTransactionCreateInput): Promise<WalletTransactionRecord>;
+  listWalletTransactions(args: WalletTransactionListArgs): Promise<WalletTransactionRecord[]>;
+}
+
+function generated(service: PdWalletService): PdWalletGeneratedMethods {
+  return service as unknown as PdWalletGeneratedMethods;
+}
+
 class PdWalletService extends MedusaService({
   VendorWallet,
   WalletTransaction,
@@ -28,8 +105,8 @@ class PdWalletService extends MedusaService({
   /**
    * Create a wallet for a new store
    */
-  async createWalletForStore(storeId: string): Promise<any> {
-    const wallet = await (this as any).createVendorWallets({
+  async createWalletForStore(storeId: string): Promise<VendorWalletRecord> {
+    const wallet = await generated(this).createVendorWallets({
       store_id: storeId,
       balance: 0,
       pending_balance: 0,
@@ -62,14 +139,14 @@ class PdWalletService extends MedusaService({
     const newTotalEarned = this.roundTND(wallet.total_earned + netAmount);
     const newTotalCommission = this.roundTND(wallet.total_commission_paid + commission);
 
-    await (this as any).updateVendorWallets({
+    await generated(this).updateVendorWallets({
       id: wallet.id,
       pending_balance: newPendingBalance,
       total_earned: newTotalEarned,
       total_commission_paid: newTotalCommission,
     });
 
-    await (this as any).createWalletTransactions({
+    await generated(this).createWalletTransactions({
       wallet_id: wallet.id,
       type: WalletTransactionType.Sale,
       amount: netAmount,
@@ -80,7 +157,7 @@ class PdWalletService extends MedusaService({
     });
 
     if (commission > 0) {
-      await (this as any).createWalletTransactions({
+      await generated(this).createWalletTransactions({
         wallet_id: wallet.id,
         type: WalletTransactionType.Commission,
         amount: -commission,
@@ -113,7 +190,7 @@ class PdWalletService extends MedusaService({
     const newBalance = this.roundTND(wallet.balance + amount);
     const newPendingBalance = this.roundTND(wallet.pending_balance - amount);
 
-    await (this as any).updateVendorWallets({
+    await generated(this).updateVendorWallets({
       id: wallet.id,
       balance: newBalance,
       pending_balance: newPendingBalance,
@@ -125,7 +202,7 @@ class PdWalletService extends MedusaService({
   /**
    * Process a withdrawal request.
    */
-  async processWithdrawal(storeId: string, amount: number): Promise<any> {
+  async processWithdrawal(storeId: string, amount: number): Promise<WalletTransactionRecord> {
     if (amount <= 0) {
       throw new PdValidationError('Le montant du retrait doit être positif');
     }
@@ -143,13 +220,13 @@ class PdWalletService extends MedusaService({
     const newBalance = this.roundTND(wallet.balance - amount);
     const newTotalWithdrawn = this.roundTND(wallet.total_withdrawn + amount);
 
-    await (this as any).updateVendorWallets({
+    await generated(this).updateVendorWallets({
       id: wallet.id,
       balance: newBalance,
       total_withdrawn: newTotalWithdrawn,
     });
 
-    const transaction = await (this as any).createWalletTransactions({
+    const transaction = await generated(this).createWalletTransactions({
       wallet_id: wallet.id,
       type: WalletTransactionType.Payout,
       amount: -amount,
@@ -170,8 +247,8 @@ class PdWalletService extends MedusaService({
   /**
    * Get wallet by store_id
    */
-  async getWalletByStoreId(storeId: string) {
-    const [wallet] = await (this as any).listVendorWallets({
+  async getWalletByStoreId(storeId: string): Promise<VendorWalletRecord> {
+    const [wallet] = await generated(this).listVendorWallets({
       filters: { store_id: storeId },
     });
 
@@ -189,10 +266,10 @@ class PdWalletService extends MedusaService({
     storeId: string,
     page: number = 1,
     limit: number = 20,
-  ) {
+  ): Promise<WalletTransactionRecord[]> {
     const wallet = await this.getWalletByStoreId(storeId);
 
-    const transactions = await (this as any).listWalletTransactions({
+    const transactions = await generated(this).listWalletTransactions({
       filters: { wallet_id: wallet.id },
       skip: (page - 1) * limit,
       take: limit,

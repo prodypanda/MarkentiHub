@@ -88,6 +88,19 @@ export class PdValidationError extends PdError {
   }
 }
 
+/**
+ * Generic 400 Bad Request error. Prefer PdValidationError for field-level issues.
+ */
+export class PdBadRequestError extends PdError {
+  constructor(
+    message: string = 'Requête invalide',
+    details: IPdErrorDetails = {},
+  ) {
+    super('PD_BAD_REQUEST', message, 400, details);
+    this.name = 'PdBadRequestError';
+  }
+}
+
 // =============================================================================
 // Permission Errors (PD_PERM_*)
 // =============================================================================

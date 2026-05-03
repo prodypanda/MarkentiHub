@@ -6,8 +6,51 @@
 // =============================================================================
 
 import { PLAN_LIMITS } from '../utils/constants';
+import { createServiceLogger } from '../utils/logger';
 
-export default async function seed({ container }: { container: any }) {
+const logger = createServiceLogger('SeedScript');
+
+type PlanSeedInput = {
+  plan: string;
+  max_products: number;
+  max_images_per_product: number;
+  commission_rate: number;
+  has_custom_domain: boolean;
+  has_page_builder: boolean;
+  has_ai_seo: boolean;
+  has_image_compression: boolean;
+  has_direct_payment: boolean;
+  has_api_keys: boolean;
+  has_white_label: boolean;
+  ai_tokens_included: number;
+  yearly_price: number;
+};
+
+type ThemeSeedInput = {
+  slug: string;
+  name: string;
+  description: string;
+  is_free: boolean;
+  price: number;
+  is_active: boolean;
+  category: string;
+  features: string[];
+};
+
+interface PdSubscriptionSeedService {
+  createSubscriptionLimits(input: PlanSeedInput): Promise<unknown>;
+}
+
+interface PdThemeSeedService {
+  createThemes(input: ThemeSeedInput): Promise<unknown>;
+}
+
+interface SeedContainer {
+  resolve(name: 'pdSubscriptionService'): PdSubscriptionSeedService;
+  resolve(name: 'pdThemeService'): PdThemeSeedService;
+}
+
+export default async function seed({ container }: { container: SeedContainer }) {
   // =========================================================================
   // 1. Seed Subscription Limits (7 plans)
   // =========================================================================
@@ -31,9 +74,9 @@ export default async function seed({ container }: { container: any }) {
         ai_tokens_included: limits.aiTokensIncluded,
         yearly_price: limits.yearlyPrice,
       });
-      console.log(`  ✅ Plan "${plan}" seeded`);
+      logger.info({ plan }, 'Subscription plan seeded');
     } catch {
-      console.log(`  ⏭️  Plan "${plan}" already exists, skipping`);
+      logger.info({ plan }, 'Subscription plan already exists, skipping');
     }
   }
 
@@ -78,11 +121,11 @@ export default async function seed({ container }: { container: any }) {
   for (const theme of themes) {
     try {
       await pdThemeService.createThemes(theme);
-      console.log(`  ✅ Theme "${theme.name}" seeded`);
+      logger.info({ theme: theme.name }, 'Theme seeded');
     } catch {
-      console.log(`  ⏭️  Theme "${theme.name}" already exists, skipping`);
+      logger.info({ theme: theme.name }, 'Theme already exists, skipping');
     }
   }
 
-  console.log('\n🐼 PandaMarket seed complete!');
+  logger.info('PandaMarket seed complete');
 }

@@ -1,10 +1,56 @@
-// @ts-nocheck
 // pandamarket/backend/src/modules/pd-mandat/service.ts
 import { MedusaService } from '@medusajs/framework/utils';
 import MandatProof from './models/mandat-proof';
-import { PdConflictError, PdNotFoundError, PdValidationError } from '../../utils/errors';
+import { PdConflictError, PdNotFoundError } from '../../utils/errors';
 import { MandatProofStatus } from '../../utils/constants';
 import { logSecurityEvent, logPaymentEvent } from '../../utils/logger';
+
+interface MandatProofRecord {
+  id: string;
+  order_id: string;
+  store_id: string;
+  image_url: string;
+  amount_expected: number;
+  uploaded_by: 'buyer' | 'vendor';
+  status: MandatProofStatus;
+  rejection_reason?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | Date | null;
+}
+
+interface MandatProofCreateInput {
+  order_id: string;
+  store_id: string;
+  image_url: string;
+  amount_expected: number;
+  uploaded_by: 'buyer' | 'vendor';
+  status: MandatProofStatus.Pending;
+}
+
+interface MandatProofUpdateInput {
+  id: string;
+  status: MandatProofStatus.Approved | MandatProofStatus.Rejected;
+  rejection_reason?: string;
+  reviewed_by: string;
+  reviewed_at: string;
+}
+
+interface MandatProofListArgs {
+  filters: Partial<Pick<MandatProofRecord, 'id' | 'order_id' | 'status'>>;
+  order?: { created_at: 'ASC' | 'DESC' };
+  skip?: number;
+  take?: number;
+}
+
+interface PdMandatGeneratedMethods {
+  createMandatProofs(input: MandatProofCreateInput): Promise<MandatProofRecord>;
+  updateMandatProofs(input: MandatProofUpdateInput): Promise<MandatProofRecord>;
+  listMandatProofs(args: MandatProofListArgs): Promise<MandatProofRecord[]>;
+}
+
+function generated(service: PdMandatService): PdMandatGeneratedMethods {
+  return service as unknown as PdMandatGeneratedMethods;
+}
 
 class PdMandatService extends MedusaService({ MandatProof }) {
   /**
@@ -16,9 +62,9 @@ class PdMandatService extends MedusaService({ MandatProof }) {
     imageUrl: string;
     amountExpected: number;
     uploadedBy: 'buyer' | 'vendor';
-  }) {
+  }): Promise<MandatProofRecord> {
     // Check if there's already an approved proof for this order
-    const [existing] = await this.listMandatProofs({
+    const [existing] = await generated(this).listMandatProofs({
       filters: { order_id: params.orderId, status: MandatProofStatus.Approved },
     });
     if (existing) {
@@ -29,7 +75,7 @@ class PdMandatService extends MedusaService({ MandatProof }) {
       );
     }
 
-    const proof = await this.createMandatProofs({
+    const proof = await generated(this).createMandatProofs({
       order_id: params.orderId,
       store_id: params.storeId,
       image_url: params.imageUrl,
@@ -50,7 +96,7 @@ class PdMandatService extends MedusaService({ MandatProof }) {
   /**
    * Admin approves a mandat proof — triggers payment.captured
    */
-  async approveProof(proofId: string, adminId: string) {
+  async approveProof(proofId: string, adminId: string): Promise<MandatProofRecord> {
     const proof = await this.getProofById(proofId);
 
     if (proof.status !== MandatProofStatus.Pending) {
@@ -61,7 +107,7 @@ class PdMandatService extends MedusaService({ MandatProof }) {
       );
     }
 
-    const updated = await this.updateMandatProofs({
+    const updated = await generated(this).updateMandatProofs({
       id: proofId,
       status: MandatProofStatus.Approved,
       reviewed_by: adminId,
@@ -80,7 +126,7 @@ class PdMandatService extends MedusaService({ MandatProof }) {
   /**
    * Admin rejects a mandat proof — buyer can re-upload
    */
-  async rejectProof(proofId: string, adminId: string, reason: string) {
+  async rejectProof(proofId: string, adminId: string, reason: string): Promise<MandatProofRecord> {
     const proof = await this.getProofById(proofId);
 
     if (proof.status !== MandatProofStatus.Pending) {
@@ -91,7 +137,7 @@ class PdMandatService extends MedusaService({ MandatProof }) {
       );
     }
 
-    const updated = await this.updateMandatProofs({
+    const updated = await generated(this).updateMandatProofs({
       id: proofId,
       status: MandatProofStatus.Rejected,
       rejection_reason: reason,
@@ -112,8 +158,8 @@ class PdMandatService extends MedusaService({ MandatProof }) {
   /**
    * Get pending mandat proofs (admin queue)
    */
-  async getPendingQueue(page: number = 1, limit: number = 20) {
-    return this.listMandatProofs({
+  async getPendingQueue(page: number = 1, limit: number = 20): Promise<MandatProofRecord[]> {
+    return generated(this).listMandatProofs({
       filters: { status: MandatProofStatus.Pending },
       order: { created_at: 'ASC' },
       skip: (page - 1) * limit,
@@ -121,8 +167,8 @@ class PdMandatService extends MedusaService({ MandatProof }) {
     });
   }
 
-  private async getProofById(proofId: string) {
-    const [proof] = await this.listMandatProofs({ filters: { id: proofId } });
+  private async getProofById(proofId: string): Promise<MandatProofRecord> {
+    const [proof] = await generated(this).listMandatProofs({ filters: { id: proofId } });
     if (!proof) throw new PdNotFoundError('Mandat proof');
     return proof;
   }

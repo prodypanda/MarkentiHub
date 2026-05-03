@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/modules/pd-api-keys/service.ts
 import { MedusaService } from '@medusajs/framework/utils';
 import ApiKey from './models/api-key';
@@ -7,6 +6,48 @@ import { PdApiKeyInvalidError, PdApiKeyScopeDeniedError } from '../../utils/erro
 import { createServiceLogger } from '../../utils/logger';
 
 const logger = createServiceLogger('ApiKeyService');
+
+interface ApiKeyRecord {
+  id: string;
+  store_id: string;
+  label: string;
+  key_hash: string;
+  key_prefix: string;
+  scopes: string[];
+  is_active: boolean;
+  last_used_at?: string | Date | null;
+  expires_at?: string | Date | null;
+  created_at?: string | Date | null;
+}
+
+interface ApiKeyCreateInput {
+  store_id: string;
+  label: string;
+  key_hash: string;
+  key_prefix: string;
+  scopes: string[];
+  is_active: boolean;
+  expires_at: string | null;
+}
+
+interface ApiKeyUpdateInput {
+  id: string;
+  is_active?: boolean;
+  last_used_at?: string;
+}
+
+interface PdApiKeyGeneratedMethods {
+  createApiKeys(input: ApiKeyCreateInput): Promise<ApiKeyRecord>;
+  updateApiKeys(input: ApiKeyUpdateInput): Promise<ApiKeyRecord>;
+  listApiKeys(args: {
+    filters: Partial<Pick<ApiKeyRecord, 'store_id' | 'key_hash' | 'is_active'>>;
+    order?: { created_at: 'ASC' | 'DESC' };
+  }): Promise<ApiKeyRecord[]>;
+}
+
+function generated(service: PdApiKeyService): PdApiKeyGeneratedMethods {
+  return service as unknown as PdApiKeyGeneratedMethods;
+}
 
 class PdApiKeyService extends MedusaService({ ApiKey }) {
   /**
@@ -18,10 +59,10 @@ class PdApiKeyService extends MedusaService({ ApiKey }) {
     label: string;
     scopes: string[];
     expiresAt?: string;
-  }): Promise<{ rawKey: string; apiKey: typeof ApiKey.$inferSelect }> {
+  }): Promise<{ rawKey: string; apiKey: ApiKeyRecord }> {
     const { rawKey, hash, prefix } = generateApiKey();
 
-    const apiKey = await this.createApiKeys({
+    const apiKey = await generated(this).createApiKeys({
       store_id: params.storeId,
       label: params.label,
       key_hash: hash,
@@ -46,7 +87,7 @@ class PdApiKeyService extends MedusaService({ ApiKey }) {
   }> {
     const hash = hashApiKey(rawKey);
 
-    const [key] = await this.listApiKeys({
+    const [key] = await generated(this).listApiKeys({
       filters: { key_hash: hash, is_active: true },
     });
 
@@ -60,14 +101,14 @@ class PdApiKeyService extends MedusaService({ ApiKey }) {
     }
 
     // Update last used timestamp
-    await this.updateApiKeys({
+    await generated(this).updateApiKeys({
       id: key.id,
       last_used_at: new Date().toISOString(),
     });
 
     return {
       storeId: key.store_id,
-      scopes: key.scopes as string[],
+      scopes: key.scopes,
     };
   }
 
@@ -84,7 +125,7 @@ class PdApiKeyService extends MedusaService({ ApiKey }) {
    * Revoke an API key (soft delete by setting is_active = false)
    */
   async revokeKey(keyId: string, storeId: string): Promise<void> {
-    await this.updateApiKeys({
+    await generated(this).updateApiKeys({
       id: keyId,
       is_active: false,
     });
@@ -95,8 +136,8 @@ class PdApiKeyService extends MedusaService({ ApiKey }) {
   /**
    * List all active keys for a store (without exposing hashes)
    */
-  async listKeysForStore(storeId: string) {
-    return this.listApiKeys({
+  async listKeysForStore(storeId: string): Promise<ApiKeyRecord[]> {
+    return generated(this).listApiKeys({
       filters: { store_id: storeId, is_active: true },
       order: { created_at: 'DESC' },
     });

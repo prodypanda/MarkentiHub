@@ -1,10 +1,21 @@
 import { AbstractFulfillmentProviderService } from '@medusajs/framework/utils';
 import { FulfillmentOption } from '@medusajs/framework/types';
 
+type ProviderContainer = Record<string, unknown>;
+type ProviderOptions = Record<string, unknown>;
+type FulfillmentData = Record<string, unknown>;
+type FulfillmentItems = unknown[];
+
+interface AramexFulfillmentResult {
+  waybill_number: string;
+  status: 'created';
+  tracking_url: string;
+}
+
 export class AramexFulfillmentProvider extends AbstractFulfillmentProviderService {
   static identifier = 'pd-aramex';
 
-  constructor(_container: any, _options: any) {
+  constructor(_container: ProviderContainer, _options: ProviderOptions) {
     super();
   }
 
@@ -17,7 +28,11 @@ export class AramexFulfillmentProvider extends AbstractFulfillmentProviderServic
     ];
   }
 
-  async validateFulfillmentData(_optionData: Record<string, unknown>, data: Record<string, unknown>, _context: Record<string, unknown>): Promise<any> {
+  async validateFulfillmentData(
+    _optionData: FulfillmentData,
+    data: FulfillmentData,
+    _context: FulfillmentData,
+  ): Promise<FulfillmentData> {
     return data;
   }
 
@@ -25,16 +40,28 @@ export class AramexFulfillmentProvider extends AbstractFulfillmentProviderServic
     return true;
   }
 
-  async canCalculate(_data: any): Promise<boolean> {
+  async canCalculate(_data: FulfillmentData): Promise<boolean> {
     return true;
   }
 
-  async calculatePrice(_optionData: any, _data: any, _context: any): Promise<any> {
+  async calculatePrice(
+    _optionData: FulfillmentData,
+    _data: FulfillmentData,
+    _context: FulfillmentData,
+  ): Promise<number> {
     // Mocking domestic Aramex Tunisia logic: 8 TND base rate
     return 8000;
   }
 
-  async createFulfillment(_data: any, _items: any, _order: any, _fulfillment: any): Promise<any> {
+  async createFulfillment(
+    _data: FulfillmentData,
+    _items: FulfillmentItems,
+    _order: FulfillmentData,
+    _fulfillment: FulfillmentData,
+  ): Promise<AramexFulfillmentResult> {
+    if (process.env.PD_NODE_ENV === 'production') {
+      throw new Error('Aramex production fulfillment integration is not configured');
+    }
     // Mocking Aramex API Shipment Creation
     // In reality, this posts to https://ws.aramex.net/ShippingAPI.V2/Shipping/Service_1_0.svc/json/CreateShipments
     const mockWaybill = 'AWB' + Math.floor(Math.random() * 1000000000);
@@ -45,11 +72,11 @@ export class AramexFulfillmentProvider extends AbstractFulfillmentProviderServic
     };
   }
 
-  async cancelFulfillment(_fulfillmentData: Record<string, unknown>): Promise<any> {
+  async cancelFulfillment(_fulfillmentData: FulfillmentData): Promise<Record<string, never>> {
     return {};
   }
 
-  async createReturnFulfillment(_fulfillmentData: any): Promise<any> {
+  async createReturnFulfillment(_fulfillmentData: FulfillmentData): Promise<Record<string, never>> {
     return {};
   }
 }
