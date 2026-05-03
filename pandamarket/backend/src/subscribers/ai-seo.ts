@@ -84,6 +84,8 @@ Respond in the following JSON format ONLY, nothing else:
       } else {
         logger.error({ product_id, store_id, status: response.status, body: await response.text() }, 'Gemini API error');
       }
+    } else if (process.env.PD_NODE_ENV === 'production') {
+      throw new Error('GEMINI_API_KEY must be set for AI SEO generation in production');
     } else {
       // Mock delay if no key is provided (for local testing)
       await new Promise(r => setTimeout(r, 2000));

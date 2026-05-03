@@ -1,4 +1,3 @@
-// @ts-nocheck
 // pandamarket/backend/src/modules/pd-subscription/service.ts
 import { MedusaService } from '@medusajs/framework/utils';
 import SubscriptionLimits from './models/subscription-limits';
@@ -10,13 +9,15 @@ import {
   PdSubscriptionDowngradeBlockedError,
 } from '../../utils/errors';
 
+type PlanLimits = (typeof PLAN_LIMITS)[SubscriptionPlan.Free];
+
 class PdSubscriptionService extends MedusaService({
   SubscriptionLimits,
 }) {
   /**
    * Get the limits for a given plan
    */
-  getPlanLimits(plan: SubscriptionPlan) {
+  getPlanLimits(plan: SubscriptionPlan): PlanLimits {
     return PLAN_LIMITS[plan];
   }
 
@@ -72,7 +73,7 @@ class PdSubscriptionService extends MedusaService({
    */
   hasFeature(
     plan: SubscriptionPlan,
-    feature: keyof typeof PLAN_LIMITS[SubscriptionPlan.Free],
+    feature: keyof PlanLimits,
   ): boolean {
     const limits = PLAN_LIMITS[plan];
     return Boolean(limits[feature]);

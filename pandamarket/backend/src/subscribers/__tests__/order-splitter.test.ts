@@ -1,34 +1,69 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Modules } from '@medusajs/framework/utils';
+import type { SubscriberArgs } from '@medusajs/framework';
 import orderSplitterSubscriber from '../order-splitter';
+
+const socketMocks = vi.hoisted(() => ({
+  to: vi.fn(),
+  emit: vi.fn(),
+}));
 
 // Mock the socket so we don't trigger network events during tests
 vi.mock('../../api/middlewares/socket', () => ({
   getSocketIO: vi.fn().mockReturnValue({
-    to: vi.fn().mockReturnThis(),
-    emit: vi.fn()
+    to: socketMocks.to,
+    emit: socketMocks.emit,
   })
 }));
 
+interface MockOrderItem {
+  id: string;
+  metadata: { store_id: string };
+}
+
+interface MockOrder {
+  id: string;
+  items: MockOrderItem[];
+}
+
+interface MockOrderModule {
+  retrieveOrder: ReturnType<typeof vi.fn>;
+}
+
+interface MockContainer {
+  resolve: ReturnType<typeof vi.fn>;
+}
+
+function createSubscriberArgs(orderId: string, container: MockContainer): SubscriberArgs<{ id: string }> {
+  return {
+    event: { data: { id: orderId } },
+    container,
+  } as unknown as SubscriberArgs<{ id: string }>;
+}
+
 describe('Order Splitter Subscriber', () => {
-  let mockContainer: any;
-  let mockOrderModule: any;
+  let mockContainer: MockContainer;
+  let mockOrderModule: MockOrderModule;
 
   beforeEach(() => {
+    socketMocks.to.mockReturnValue({ emit: socketMocks.emit });
+    socketMocks.emit.mockReset();
+    socketMocks.to.mockClear();
+
     mockOrderModule = {
       retrieveOrder: vi.fn()
     };
 
     mockContainer = {
       resolve: vi.fn((moduleName: string) => {
-        if (moduleName === 'order') return mockOrderModule;
-        if (moduleName === 'fulfillment') return {};
+        if (moduleName === Modules.ORDER) return mockOrderModule;
         return {};
       })
     };
   });
 
   it('should early-exit and not split if order has only 1 vendor', async () => {
-    const mockOrder = {
+    const mockOrder: MockOrder = {
       id: 'order_1',
       items: [
         { id: 'item_1', metadata: { store_id: 'store_A' } },
@@ -37,19 +72,18 @@ describe('Order Splitter Subscriber', () => {
     };
     mockOrderModule.retrieveOrder.mockResolvedValue(mockOrder);
 
-    const consoleSpy = vi.spyOn(console, 'log');
+    await orderSplitterSubscriber(createSubscriberArgs('order_1', mockContainer));
 
-    await orderSplitterSubscriber({
-      event: { data: { id: 'order_1' } },
-      container: mockContainer
-    } as any);
-
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('belongs to a single store'));
-    expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('Split required'));
+    expect(socketMocks.to).toHaveBeenCalledWith('store_store_A');
+    expect(socketMocks.emit).toHaveBeenCalledWith('notification.new_order', {
+      orderId: 'order_1',
+      message: 'Vous avez reçu une nouvelle commande !',
+      itemCount: 2,
+    });
   });
 
   it('should group items and simulate splitting for multi-vendor carts', async () => {
-    const mockOrder = {
+    const mockOrder: MockOrder = {
       id: 'order_2',
       items: [
         { id: 'item_1', metadata: { store_id: 'store_A' } },
@@ -60,16 +94,21 @@ describe('Order Splitter Subscriber', () => {
     };
     mockOrderModule.retrieveOrder.mockResolvedValue(mockOrder);
 
-    const consoleSpy = vi.spyOn(console, 'log');
+    await orderSplitterSubscriber(createSubscriberArgs('order_2', mockContainer));
 
-    await orderSplitterSubscriber({
-      event: { data: { id: 'order_2' } },
-      container: mockContainer
-    } as any);
-
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Split required: Order order_2 contains items from 3 different stores'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Generating distinct fulfillment group for vendor: store_A (2 items)'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Generating distinct fulfillment group for vendor: store_B (1 items)'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Generating distinct fulfillment group for vendor: store_C (1 items)'));
+    expect(socketMocks.to).toHaveBeenCalledWith('store_store_A');
+    expect(socketMocks.to).toHaveBeenCalledWith('store_store_B');
+    expect(socketMocks.to).toHaveBeenCalledWith('store_store_C');
+    expect(socketMocks.emit).toHaveBeenCalledTimes(3);
+    expect(socketMocks.emit).toHaveBeenCalledWith('notification.new_order', {
+      orderId: 'order_2',
+      message: 'Nouvelle commande détectée dans un achat groupé !',
+      itemCount: 2,
+    });
+    expect(socketMocks.emit).toHaveBeenCalledWith('notification.new_order', {
+      orderId: 'order_2',
+      message: 'Nouvelle commande détectée dans un achat groupé !',
+      itemCount: 1,
+    });
   });
 });

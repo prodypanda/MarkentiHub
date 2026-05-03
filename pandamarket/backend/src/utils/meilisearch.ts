@@ -4,17 +4,36 @@ let meiliClient: MeiliSearch | null = null;
 
 export const MEILI_PRODUCTS_INDEX = 'pandamarket_products';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isIndexAlreadyExistsError(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  const code = error.code;
+  const type = error.type;
+  const message = error.message;
+  return (
+    code === 'index_already_exists' ||
+    type === 'index_already_exists' ||
+    (typeof message === 'string' && message.toLowerCase().includes('already exists'))
+  );
+}
+
 export function getMeiliClient(): MeiliSearch {
   if (meiliClient) {
     return meiliClient;
   }
 
   const host = process.env.MEILISEARCH_HOST || 'http://localhost:7700';
-  const apiKey = process.env.MEILISEARCH_API_KEY || 'masterKey';
+  const apiKey = process.env.MEILISEARCH_API_KEY;
+  if (process.env.PD_NODE_ENV === 'production' && !apiKey) {
+    throw new Error('MEILISEARCH_API_KEY must be set in production');
+  }
 
   meiliClient = new MeiliSearch({
     host,
-    apiKey,
+    ...(apiKey ? { apiKey } : {}),
   });
 
   return meiliClient;
@@ -29,8 +48,11 @@ export async function initializeMeilisearch() {
 
   try {
     await client.createIndex(MEILI_PRODUCTS_INDEX, { primaryKey: 'id' });
-  } catch (e: any) {
+  } catch (error: unknown) {
     // Ignore if index already exists
+    if (!isIndexAlreadyExistsError(error)) {
+      throw error;
+    }
   }
 
   await index.updateFilterableAttributes([
