@@ -20,6 +20,31 @@ const bodySchema = z.object({
   notes: z.string().min(3).max(500).optional(),
 });
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/verifications/[id]/route.ts
+=======
+const paramsSchema = z.object({
+  id: z.string().trim().min(1).max(128),
+});
+
+function validationFields(error: z.ZodError): Record<string, string> {
+  const fields: Record<string, string> = {};
+  error.issues.forEach((i) => {
+    fields[i.path.join('.')] = i.message;
+  });
+  return fields;
+}
+
+function getDocumentId(req: MedusaRequest): string {
+  const parsed = paramsSchema.safeParse(req.params);
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+  }
+  return parsed.data.id;
+}
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/verifications/[id]/route.ts
 interface VerificationDoc {
   id: string;
   store_id: string;
@@ -40,6 +65,7 @@ export async function PUT(
   res: MedusaResponse,
 ): Promise<void> {
   const { userId } = requireAdminContext(req);
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/admin/verifications/[id]/route.ts
   const { id } = req.params;
 
   const parsed = bodySchema.safeParse(req.body);
@@ -49,6 +75,15 @@ export async function PUT(
       fields[i.path.join('.')] = i.message;
     });
     throw new PdValidationError('Données invalides', { fields });
+=======
+  const id = getDocumentId(req);
+
+  const parsed = bodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/admin/verifications/[id]/route.ts
   }
 
   if (parsed.data.status === 'rejected' && !parsed.data.notes) {

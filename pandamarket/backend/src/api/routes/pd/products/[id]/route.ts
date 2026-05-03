@@ -15,6 +15,10 @@ import { requireStoreContext } from '../../../../middlewares/auth-context';
 import {
   PdNotFoundError,
   PdNotOwnerError,
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+=======
+  PdStoreNotFoundError,
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   PdValidationError,
 } from '../../../../../utils/errors';
 import { SubscriptionPlan } from '../../../../../utils/constants';
@@ -22,6 +26,31 @@ import { createServiceLogger } from '../../../../../utils/logger';
 
 const logger = createServiceLogger('ProductDetailRoute');
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
+=======
+const paramsSchema = z.object({
+  id: z.string().trim().min(1).max(128),
+});
+
+function validationFields(error: z.ZodError): Record<string, string> {
+  const fields: Record<string, string> = {};
+  error.issues.forEach((issue) => {
+    fields[issue.path.join('.')] = issue.message;
+  });
+  return fields;
+}
+
+function getProductId(req: MedusaRequest): string {
+  const parsed = paramsSchema.safeParse(req.params);
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+  }
+  return parsed.data.id;
+}
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 interface PdStoreLike {
   id: string;
   subscription_plan: SubscriptionPlan;
@@ -71,7 +100,11 @@ export const GET = async (
   req: MedusaRequest,
   res: MedusaResponse,
 ): Promise<void> => {
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productId = req.params.id;
+=======
+  const productId = getProductId(req);
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
 
   let product: ProductLike;
@@ -105,6 +138,7 @@ export const PUT = async (
   res: MedusaResponse,
 ): Promise<void> => {
   const { storeId } = requireStoreContext(req);
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productId = req.params.id;
 
   const parsed = updateProductSchema.safeParse(req.body);
@@ -114,10 +148,20 @@ export const PUT = async (
       fields[issue.path.join('.')] = issue.message;
     });
     throw new PdValidationError('Données invalides', { fields });
+=======
+  const productId = getProductId(req);
+
+  const parsed = updateProductSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new PdValidationError('Données invalides', {
+      fields: validationFields(parsed.error),
+    });
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   }
   const data = parsed.data;
 
   const product = await getProductForOwner(req, productId, storeId);
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 
   const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
 
@@ -131,6 +175,20 @@ export const PUT = async (
     }
   }
 
+=======
+
+  const productModuleService = req.scope.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
+
+  // Image quota — compare new image count against plan limit.
+  if (data.images && data.images.length > 0) {
+    const storeService = req.scope.resolve<IPdStoreService>('pdStoreService');
+    const subscriptionService = req.scope.resolve<IPdSubscriptionService>('pdSubscriptionService');
+    const [store] = await storeService.listPdStores({ filters: { id: storeId } });
+    if (!store) throw new PdStoreNotFoundError(storeId);
+    subscriptionService.assertCanUploadImage(store.subscription_plan, data.images.length);
+  }
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const updateData: Record<string, unknown> = {};
   if (data.title !== undefined) updateData.title = data.title;
   if (data.description !== undefined) updateData.description = data.description;
@@ -163,7 +221,11 @@ export const DELETE = async (
   res: MedusaResponse,
 ): Promise<void> => {
   const { storeId } = requireStoreContext(req);
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
   const productId = req.params.id;
+=======
+  const productId = getProductId(req);
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/products/[id]/route.ts
 
   await getProductForOwner(req, productId, storeId);
 

@@ -13,7 +13,11 @@ import { ShippingMode, SubscriptionPlan } from '../../../../../utils/constants';
 import { PdStoreNotFoundError, PdNotOwnerError, PdValidationError } from '../../../../../utils/errors';
 
 const paramsSchema = z.object({
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/stores/[id]/route.ts
   id: z.string().min(1),
+=======
+  id: z.string().trim().min(1).max(128),
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/stores/[id]/route.ts
 });
 
 const updateStoreSchema = z
@@ -66,8 +70,12 @@ function validationFields(error: z.ZodError): Record<string, string> {
 }
 
 function getRouteId(req: MedusaRequest): string {
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/api/routes/pd/stores/[id]/route.ts
   const params = req.params as { id?: string };
   const parsed = paramsSchema.safeParse({ id: params.id });
+=======
+  const parsed = paramsSchema.safeParse(req.params);
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/api/routes/pd/stores/[id]/route.ts
   if (!parsed.success) {
     throw new PdValidationError('Données invalides', {
       fields: validationFields(parsed.error),

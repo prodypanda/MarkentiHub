@@ -29,6 +29,7 @@ interface KonnectVendorKeys {
   wallet_id?: string;
 }
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 
 interface PdStoreWithKonnectConfig {
   id: string;
@@ -62,6 +63,8 @@ interface PaymentContextShape {
 }
 
 =======
+=======
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 
 interface PdStoreWithKonnectConfig {
   id: string;
@@ -94,6 +97,9 @@ interface PaymentContextShape {
   session_data?: Record<string, unknown> | null;
 }
 
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
 >>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<string, unknown>> {
   static identifier = 'pd-konnect';
@@ -118,6 +124,12 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
 
     if (!this.useRealApi && !isDirect) {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
+      if (process.env.PD_NODE_ENV === 'production') {
+        throw new Error('PD_KONNECT_ENABLED and KONNECT_API_KEY must be configured for production payments');
+      }
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 =======
       if (process.env.PD_NODE_ENV === 'production') {
         throw new Error('PD_KONNECT_ENABLED and KONNECT_API_KEY must be configured for production payments');
@@ -164,11 +176,24 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
       }).container_.resolve<IPdStoreService>('pdStoreService');
       const [store] = await storeService.listPdStores({ filters: { id: storeId } });
       if (!store) return { isDirect: false };
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
       if (!PLAN_LIMITS[store.subscription_plan]?.hasDirectPayment) return { isDirect: false };
 
       const konnect = store.payment_config?.konnect;
       if (!konnect?.api_key_encrypted) return { isDirect: false };
 
+=======
+      const plan = store.subscription_plan;
+      if (!plan || !PLAN_LIMITS[plan]) {
+        logger.error({ store_id: storeId }, 'Store has no valid subscription plan for direct payments');
+        return { isDirect: false };
+      }
+      if (!PLAN_LIMITS[plan].hasDirectPayment) return { isDirect: false };
+
+      const konnect = store.payment_config?.konnect;
+      if (!konnect?.api_key_encrypted) return { isDirect: false };
+
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
       return {
         isDirect: true,
         vendorKeys: {
@@ -213,6 +238,12 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<Record<strin
 
     if (!this.useRealApi) {
 <<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+<<<<<<< H:/markentihub/MarkentiHub/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
+=======
+      if (process.env.PD_NODE_ENV === 'production') {
+        return { data: paymentSessionData, status: 'error' };
+      }
+>>>>>>> C:/Users/PC/.windsurf/worktrees/MarkentiHub/MarkentiHub-5cc0a1c8/pandamarket/backend/src/modules/payment-providers/konnect/service.ts
 =======
       if (process.env.PD_NODE_ENV === 'production') {
         return { data: paymentSessionData, status: 'error' };
