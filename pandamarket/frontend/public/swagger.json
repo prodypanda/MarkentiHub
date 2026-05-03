@@ -1,0 +1,94 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PandaMarket Vendor API",
+    "description": "Public REST API for PandaMarket SaaS vendors to manage their inventory, webhooks, and orders programmatically.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.pandamarket.tn/pd",
+      "description": "Production Server"
+    },
+    {
+      "url": "http://localhost:9000/pd",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Your API Key generated from the PandaMarket Vendor Dashboard."
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "summary": "List vendor products",
+        "tags": ["Products"],
+        "responses": {
+          "200": {
+            "description": "A list of products isolated to the authenticated vendor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new product",
+        "tags": ["Products"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "price": { "type": "number" },
+                  "stock": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created successfully."
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "List vendor orders",
+        "tags": ["Orders"],
+        "responses": {
+          "200": {
+            "description": "A list of split fulfillments/orders assigned to the vendor."
+          }
+        }
+      }
+    }
+  }
+}

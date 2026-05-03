@@ -190,7 +190,7 @@ PD_HUB_DOMAIN=pandamarket.tn
 # Database — USE A STRONG PASSWORD
 PD_DATABASE_URL=postgresql://pd_user:YOUR_STRONG_DB_PASSWORD_HERE@localhost:5432/pandamarket
 
-# Redis
+# Redis (Used for caching, event queue, and API rate-limiting)
 PD_REDIS_URL=redis://localhost:6379
 
 # Storage — USE STRONG KEYS
@@ -357,11 +357,11 @@ You should see:
 ### Useful PM2 commands
 
 ```bash
-pm2 logs pd-backend       # View backend logs
+pm2 logs pd-backend       # View backend logs (useful for monitoring WebSocket connections)
 pm2 logs pd-frontend      # View frontend logs
-pm2 restart pd-backend     # Restart backend
-pm2 restart all            # Restart everything
-pm2 monit                  # Real-time monitoring dashboard
+pm2 restart pd-backend    # Restart backend (clears in-memory rate limits)
+pm2 restart all           # Restart everything
+pm2 monit                 # Real-time monitoring dashboard for memory spikes
 ```
 
 ---

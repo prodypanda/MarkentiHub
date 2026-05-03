@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-pandamarket}
+    volumes:
+      - pd-db-data:/var/lib/postgresql/data
+    networks:
+      - pd-network
+
+  redis:
+    image: redis:alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-pd-redis-secret}
+    volumes:
+      - pd-redis-data:/data
+    networks:
+      - pd-network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    restart: always
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-pd-meili-master-key}
+      MEILI_ENV: production
+    volumes:
+      - pd-meili-data:/meili_data
+    networks:
+      - pd-network
+
+  backend-server:
+    build:
+      context: ./pandamarket/backend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - MEDUSA_WORKER_MODE=server
+      - PD_DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-pandamarket}
+      - PD_REDIS_URL=redis://:${REDIS_PASSWORD:-pd-redis-secret}@redis:6379
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY:-pd-meili-master-key}
+      - PD_STORE_CORS=https://pandamarket.tn,https://*.pandamarket.tn
+      - PD_ADMIN_CORS=https://admin.pandamarket.tn
+    depends_on:
+      - db
+      - redis
+      - meilisearch
+    networks:
+      - pd-network
+
+  backend-worker:
+    build:
+      context: ./pandamarket/backend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - MEDUSA_WORKER_MODE=worker
+      - PD_DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-pandamarket}
+      - PD_REDIS_URL=redis://:${REDIS_PASSWORD:-pd-redis-secret}@redis:6379
+      - PD_GEMINI_API_KEY=${PD_GEMINI_API_KEY}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - pd-network
+
+  frontend:
+    build:
+      context: ./pandamarket/frontend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_MEDUSA_URL=https://api.pandamarket.tn
+      - NEXT_PUBLIC_HUB_DOMAIN=pandamarket.tn
+      - NEXT_PUBLIC_MEILISEARCH_HOST=https://search.pandamarket.tn
+      - NEXT_PUBLIC_MEILISEARCH_API_KEY=${MEILI_PUBLIC_KEY}
+    depends_on:
+      - backend-server
+    networks:
+      - pd-network
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - pd-caddy-data:/data
+      - pd-caddy-config:/config
+    depends_on:
+      - frontend
+      - backend-server
+    networks:
+      - pd-network
+
+volumes:
+  pd-db-data:
+  pd-redis-data:
+  pd-meili-data:
+  pd-caddy-data:
+  pd-caddy-config:
+
+networks:
+  pd-network:
+    driver: bridge

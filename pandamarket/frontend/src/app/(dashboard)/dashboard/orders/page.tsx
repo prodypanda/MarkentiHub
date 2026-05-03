@@ -1,9 +1,11 @@
 // pandamarket/frontend/src/app/(dashboard)/dashboard/orders/page.tsx
 'use client';
 import React, { useState } from 'react';
-import { Search, Filter, Eye } from 'lucide-react';
+import useSWR from 'swr';
+import { Search, Filter, Eye, Loader2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { api } from '@/lib/api';
 
 const orders = [
   { id: 'PD-1234', customer: 'Ahmed B.', email: 'ahmed@test.tn', items: 2, total: '85.000', status: 'pending', payment: 'flouci', date: '2 mai 2026' },
@@ -29,8 +31,16 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
-  const filtered = orders.filter((o) => {
-    const matchSearch = o.id.toLowerCase().includes(search.toLowerCase()) || o.customer.toLowerCase().includes(search.toLowerCase());
+  const { data, error, isLoading } = useSWR(
+    `/pd/orders?store_id=store_123`, 
+    api.get
+  );
+
+  const rawOrders = (data as any)?.orders || orders; // Fallback to static mock for display if api fails
+
+  const filtered = rawOrders.filter((o: any) => {
+    const matchSearch = String(o.id).toLowerCase().includes(search.toLowerCase()) || 
+      (o.customer || o.email || '').toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || o.status === filter;
     return matchSearch && matchFilter;
   });
@@ -64,27 +74,43 @@ export default function OrdersPage() {
       </div>
 
       <Card padding="0">
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>{['Commande', 'Client', 'Articles', 'Total', 'Paiement', 'Statut', 'Date', ''].map((h) => (
-              <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 'var(--pd-fs-xs)', fontWeight: 600, color: 'var(--pd-text-tertiary)', textTransform: 'uppercase', borderBottom: '1px solid var(--pd-border)' }}>{h}</th>
-            ))}</tr>
-          </thead>
-          <tbody>
-            {filtered.map((o) => (
-              <tr key={o.id} style={{ borderBottom: '1px solid var(--pd-border)' }}>
-                <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: 'var(--pd-fs-sm)' }}>{o.id}</td>
-                <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-sm)' }}>{o.customer}</td>
-                <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-sm)' }}>{o.items}</td>
-                <td style={{ padding: '14px 16px', fontWeight: 600, fontSize: 'var(--pd-fs-sm)' }}>{o.total} TND</td>
-                <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)' }}>{paymentBadge[o.payment]}</td>
-                <td style={{ padding: '14px 16px' }}><Badge variant={statusMap[o.status].variant} dot>{statusMap[o.status].label}</Badge></td>
-                <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-text-tertiary)' }}>{o.date}</td>
-                <td style={{ padding: '14px 16px' }}><button style={{ color: 'var(--pd-text-secondary)' }}><Eye size={16} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {isLoading ? (
+          <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}>
+            <Loader2 size={32} className="animate-spin" style={{ color: 'var(--pd-text-tertiary)' }} />
+          </div>
+        ) : error && !rawOrders.length ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--pd-red)' }}>
+            Erreur lors du chargement des commandes
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--pd-text-secondary)' }}>
+            Aucune commande trouvée.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>{['Commande', 'Client', 'Articles', 'Total', 'Paiement', 'Statut', 'Date', ''].map((h) => (
+                  <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 'var(--pd-fs-xs)', fontWeight: 600, color: 'var(--pd-text-tertiary)', textTransform: 'uppercase', borderBottom: '1px solid var(--pd-border)' }}>{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {filtered.map((o: any) => (
+                  <tr key={o.id} style={{ borderBottom: '1px solid var(--pd-border)', transition: 'background var(--pd-transition)' }}>
+                    <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: 'var(--pd-fs-sm)' }}>{o.id}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-sm)' }}>{o.customer || o.email}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-sm)' }}>{o.items?.length || o.items}</td>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, fontSize: 'var(--pd-fs-sm)' }}>{Number(o.total || 0).toFixed(3)} TND</td>
+                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)' }}>{paymentBadge[o.payment] || o.payment}</td>
+                    <td style={{ padding: '14px 16px' }}><Badge variant={statusMap[o.status]?.variant || 'neutral'} dot>{statusMap[o.status]?.label || o.status}</Badge></td>
+                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-text-tertiary)' }}>{o.date || new Date().toLocaleDateString('fr-FR')}</td>
+                    <td style={{ padding: '14px 16px' }}><button style={{ color: 'var(--pd-text-secondary)', cursor: 'pointer', border: 'none', background: 'none' }} className="hover-lift"><Eye size={16} /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

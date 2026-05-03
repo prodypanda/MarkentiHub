@@ -1,0 +1,31 @@
+# Caddyfile
+# Global Options
+{
+    email admin@pandamarket.tn
+}
+
+# 1. API Routing (Medusa Backend)
+api.pandamarket.tn {
+    reverse_proxy backend-server:9000
+}
+
+# 2. Central Hub & Wildcard Vendor Stores
+# Requires DNS wildcard A record (*.pandamarket.tn) pointing to server IP
+pandamarket.tn, *.pandamarket.tn {
+    # Optional: Caddy on-demand TLS for custom domains (Advanced SaaS feature)
+    # tls {
+    #     on_demand
+    # }
+
+    reverse_proxy frontend:3000
+}
+
+# 3. Super Admin Dashboard
+admin.pandamarket.tn {
+    reverse_proxy frontend:3000
+}
+
+# 4. Search API Exposure (Strictly Read-Only Public Key)
+search.pandamarket.tn {
+    reverse_proxy meilisearch:7700
+}

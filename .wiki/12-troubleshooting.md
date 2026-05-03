@@ -116,6 +116,49 @@ Both should exit with code 0.
 
 ---
 
+### Test suite failures (Jest undefined)
+
+**Symptom**: `ReferenceError: describe is not defined` or `vi is not defined` when running backend tests.
+
+**Cause**: The project uses **Vitest** for testing, not Jest.
+
+**Solution**:
+Ensure you are explicitly importing the testing globals at the top of your test files:
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+```
+Run tests using the correct command:
+```powershell
+npm run test
+# or specifically
+npx vitest
+```
+
+---
+
+### WebSocket connection issues
+
+**Symptom**: Console shows `WebSocket connection to 'ws://...' failed` or `socket.io-client` module not found.
+
+**Solutions**:
+1. Ensure the frontend has the dependency installed: `npm install socket.io-client` in the `frontend` folder.
+2. In production, ensure Caddy is configured to pass WebSocket headers (it does this automatically for reverse_proxy).
+3. Verify the backend Socket.io server is attached to the main HTTP server and running on the expected port.
+
+---
+
+### Rate Limiting (HTTP 429 Too Many Requests)
+
+**Symptom**: API returns `429 Too Many Requests` or `Rate limit exceeded`.
+
+**Cause**: You are hitting the API too fast. Public routes are limited to 100 req/min, and authenticated routes to 60 req/min.
+
+**Solutions**:
+1. During local development, you can temporarily comment out the rate limiting middleware in `backend/src/api/middlewares.ts`.
+2. In production, ensure your frontend relies on SWR caching to avoid redundant API calls.
+
+---
+
 ### Frontend can't connect to backend
 
 **Symptom**: Network errors, "Failed to fetch", or CORS errors in the browser console.

@@ -1,10 +1,11 @@
 // pandamarket/frontend/src/app/(dashboard)/dashboard/settings/page.tsx
 'use client';
 import React, { useState } from 'react';
-import { Save, Globe, Palette, Image } from 'lucide-react';
+import { Save, Globe, Palette, Image, CreditCard } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Badge from '@/components/ui/Badge';
 
 export default function SettingsPage() {
   const [storeName, setStoreName] = useState('Ma Boutique');
@@ -127,6 +128,30 @@ export default function SettingsPage() {
              <Input label="Webhook URL (Notification commandes)" placeholder="https://votre-serveur.com/webhook" />
              <Button size="sm" style={{ marginTop: 12 }}>Enregistrer Webhook</Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Direct Payments */}
+      <Card>
+        <h2 style={{ fontSize: 'var(--pd-fs-lg)', fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CreditCard size={20} /> Méthodes de Paiement (Direct)
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 480 }}>
+          <div style={{ padding: '12px', backgroundColor: 'var(--pd-bg-secondary)', borderRadius: 'var(--pd-radius-sm)', border: '1px solid var(--pd-border)' }}>
+            <p style={{ fontSize: 'var(--pd-fs-sm)', color: 'var(--pd-text-secondary)', marginBottom: '8px' }}>
+              En activant les paiements directs, les fonds vont directement sur votre propre compte marchand (Plan Pro requis).
+            </p>
+            <Badge variant="warning">Mode Pro Uniquement</Badge>
+          </div>
+          
+          <h3 style={{ fontSize: 'var(--pd-fs-base)', fontWeight: 600, marginTop: 8 }}>Konnect</h3>
+          <Input label="API Key" type="password" placeholder="sk_..." />
+          
+          <h3 style={{ fontSize: 'var(--pd-fs-base)', fontWeight: 600, marginTop: 8 }}>Flouci</h3>
+          <Input label="App Public Key" type="text" placeholder="pk_..." />
+          <Input label="App Secret Key" type="password" placeholder="sk_..." />
+          
+          <Button icon={<Save size={16} />} style={{ alignSelf: 'flex-start', marginTop: 8 }}>Enregistrer Clés</Button>
         </div>
       </Card>
     </div>

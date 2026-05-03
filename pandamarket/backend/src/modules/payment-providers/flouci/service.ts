@@ -67,11 +67,40 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<any> {
   }
 
   async authorizePayment(paymentSessionData: Record<string, unknown>, context: Record<string, unknown>): Promise<{ data: Record<string, unknown>; status: "authorized" | "error" | "requires_more" | "pending" | "canceled" }> {
-    // We would verify the payment with Flouci API here
-    return {
-      data: paymentSessionData,
-      status: 'authorized', 
-    };
+    const paymentId = paymentSessionData.payment_id as string;
+    const appToken = process.env.FLOUCI_APP_TOKEN || '';
+    const appSecret = process.env.FLOUCI_APP_SECRET || '';
+
+    try {
+      const response = await fetch(`https://developers.flouci.com/api/verify_payment/${paymentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'apppublic': appToken,
+          'appsecret': appSecret
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.result.status === 'SUCCESS') {
+        return {
+          data: paymentSessionData,
+          status: 'authorized', 
+        };
+      } else {
+        return {
+          data: paymentSessionData,
+          status: 'error',
+        };
+      }
+    } catch (e) {
+      console.error('Flouci verification error', e);
+      return {
+        data: paymentSessionData,
+        status: 'error',
+      };
+    }
   }
 
   async cancelPayment(paymentSessionData: Record<string, unknown>): Promise<Record<string, unknown> | PaymentProviderError> {
@@ -107,10 +136,19 @@ export class FlouciPaymentProvider extends AbstractPaymentProvider<any> {
   }
 
   async getWebhookActionAndData(payload: ProviderWebhookPayload): Promise<{ action: "successful" | "failed" | "authorized" | "captured" | "not_supported"; data: Record<string, unknown> }> {
-    // Handle Flouci Webhook verification here
+    const data = payload.data as any;
+    
+    // Validate the incoming Flouci payload
+    if (data.status === 'SUCCESS') {
+      return {
+        action: 'authorized',
+        data: data,
+      };
+    }
+
     return {
-      action: 'authorized',
-      data: payload.data.payload as Record<string, unknown>,
+      action: 'failed',
+      data: data,
     };
   }
 }

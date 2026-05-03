@@ -6,10 +6,11 @@ interface CardProps {
   hover?: boolean;
   padding?: string;
   style?: React.CSSProperties;
+  className?: string;
   onClick?: () => void;
 }
 
-export default function Card({ children, hover = false, padding = 'var(--pd-sp-6)', style, onClick }: CardProps) {
+export default function Card({ children, hover = false, padding = 'var(--pd-sp-6)', style, className, onClick }: CardProps) {
   const baseStyle: React.CSSProperties = {
     backgroundColor: 'var(--pd-bg-secondary)',
     border: '1px solid var(--pd-border)',
@@ -24,6 +25,7 @@ export default function Card({ children, hover = false, padding = 'var(--pd-sp-6
   return (
     <div
       style={baseStyle}
+      className={className}
       onClick={onClick}
       onMouseEnter={(e) => {
         if (hover) {

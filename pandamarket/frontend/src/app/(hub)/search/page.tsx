@@ -28,6 +28,7 @@ export default function SearchPage() {
   // Filters state
   const [selectedCategory, setSelectedCategory] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [sortOrder, setSortOrder] = useState('relevance');
 
   const performSearch = async () => {
     setLoading(true);
@@ -41,6 +42,7 @@ export default function SearchPage() {
       const searchRes = await index.search(query, {
         filter: filterOptions,
         facets: ['category', 'vendor_name'],
+        sort: sortOrder !== 'relevance' ? [sortOrder] : undefined,
       });
 
       setResults(searchRes.hits);
@@ -64,7 +66,7 @@ export default function SearchPage() {
     }, 300);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, selectedCategory, priceRange]);
+  }, [query, selectedCategory, priceRange, sortOrder]);
 
   return (
     <div style={{ 
@@ -166,10 +168,20 @@ export default function SearchPage() {
 
           {/* Results Grid */}
           <div>
-            <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
               <p style={{ color: 'var(--pd-text-secondary)' }}>
                 {loading ? 'Recherche en cours...' : `${results.length} résultats trouvés`}
               </p>
+              <select 
+                value={sortOrder} 
+                onChange={e => setSortOrder(e.target.value)}
+                style={{ padding: '8px 16px', borderRadius: 'var(--pd-radius-sm)', border: '1px solid var(--pd-border)', backgroundColor: 'var(--pd-bg-secondary)', outline: 'none' }}
+              >
+                <option value="relevance">Pertinence</option>
+                <option value="price:asc">Prix croissant</option>
+                <option value="price:desc">Prix décroissant</option>
+                <option value="created_at:desc">Nouveautés</option>
+              </select>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>

@@ -1,6 +1,6 @@
 // pandamarket/frontend/src/app/(dashboard)/layout.tsx
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -8,6 +8,7 @@ import {
   ShieldCheck, Sparkles, Bell, ChevronLeft, ChevronRight,
   LogOut, BarChart3, Key,
 } from 'lucide-react';
+import { socket } from '@/lib/socket';
 
 const navItems = [
   { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -23,7 +24,27 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [notifications, setNotifications] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const mockStoreId = "store_123";
+    
+    socket.connect();
+    socket.emit('join_store', { storeId: mockStoreId, token: 'mock-jwt' });
+
+    socket.on('notification.new_order', (data: any) => {
+      setNotifications(prev => prev + 1);
+      setToastMessage(data.message);
+      setTimeout(() => setToastMessage(null), 5000);
+    });
+
+    return () => {
+      socket.off('notification.new_order');
+      socket.disconnect();
+    };
+  }, []);
 
   const sidebarWidth = collapsed ? 72 : 260;
 
@@ -115,13 +136,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             borderRadius: 'var(--pd-radius-md)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'var(--pd-text-secondary)',
-          }} aria-label="Notifications">
+          }} aria-label="Notifications" onClick={() => setNotifications(0)}>
             <Bell size={20} />
-            <span style={{
-              position: 'absolute', top: 6, right: 6,
-              width: 8, height: 8, borderRadius: '50%',
-              backgroundColor: 'var(--pd-red)',
-            }} className="animate-badge-pulse" />
+            {notifications > 0 && (
+              <span style={{
+                position: 'absolute', top: 6, right: 6,
+                width: 14, height: 14, borderRadius: '50%',
+                backgroundColor: 'var(--pd-red)',
+                color: 'white', fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
+              }} className="animate-badge-pulse">{notifications}</span>
+            )}
           </button>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
@@ -137,6 +161,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main style={{ padding: 24 }}>
           {children}
         </main>
+        
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div style={{
+            position: 'fixed', bottom: 24, right: 24,
+            backgroundColor: 'var(--pd-green)', color: 'white',
+            padding: '16px 24px', borderRadius: 'var(--pd-radius-md)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', gap: 12,
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <Bell size={18} />
+            <span style={{ fontWeight: 600 }}>{toastMessage}</span>
+          </div>
+        )}
       </div>
     </div>
   );

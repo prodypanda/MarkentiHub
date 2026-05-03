@@ -27,6 +27,7 @@ class PdApiClient {
 
   // Specific domain methods
   async getStore(id: string) { return this.request('GET', `/api/pd/stores/${id}`); }
+  async getProduct(id: string) { return this.request('GET', `/store/products/${id}`); }
   async getPlans() { return this.request('GET', '/api/pd/subscriptions/plans'); }
   async getWallet() { return this.request('GET', '/api/pd/wallet'); }
   async getVerificationStatus() { return this.request('GET', '/api/pd/verification'); }

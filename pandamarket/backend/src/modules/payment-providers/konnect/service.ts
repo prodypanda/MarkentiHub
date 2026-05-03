@@ -67,10 +67,38 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<any> {
   }
 
   async authorizePayment(paymentSessionData: Record<string, unknown>, context: Record<string, unknown>): Promise<{ data: Record<string, unknown>; status: "authorized" | "error" | "requires_more" | "pending" | "canceled" }> {
-    return {
-      data: paymentSessionData,
-      status: 'authorized', 
-    };
+    const paymentId = paymentSessionData.payment_id as string;
+    const apiKey = process.env.KONNECT_API_KEY || '';
+
+    try {
+      const response = await fetch(`https://api.konnect.network/api/v2/payments/${paymentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.payment && data.payment.status === 'completed') {
+        return {
+          data: paymentSessionData,
+          status: 'authorized', 
+        };
+      } else {
+        return {
+          data: paymentSessionData,
+          status: 'error',
+        };
+      }
+    } catch (e) {
+      console.error('Konnect verification error', e);
+      return {
+        data: paymentSessionData,
+        status: 'error',
+      };
+    }
   }
 
   async cancelPayment(paymentSessionData: Record<string, unknown>): Promise<Record<string, unknown> | PaymentProviderError> {
@@ -106,9 +134,19 @@ export class KonnectPaymentProvider extends AbstractPaymentProvider<any> {
   }
 
   async getWebhookActionAndData(payload: ProviderWebhookPayload): Promise<{ action: "successful" | "failed" | "authorized" | "captured" | "not_supported"; data: Record<string, unknown> }> {
+    const data = payload.data as any;
+    
+    // Validate the incoming Konnect payload
+    if (data.status === 'completed') {
+      return {
+        action: 'authorized',
+        data: data,
+      };
+    }
+
     return {
-      action: 'authorized',
-      data: payload.data.payload as Record<string, unknown>,
+      action: 'failed',
+      data: data,
     };
   }
 }

@@ -1,0 +1,47 @@
+/* frontend/src/styles/themes.css */
+/* Base Shared Storefront Variables */
+:root {
+  --store-primary: #16C784;
+  --store-bg: #ffffff;
+  --store-text: #111827;
+  --store-border: #e5e7eb;
+  --store-radius: 8px;
+  --store-font: 'Inter', sans-serif;
+  --store-header-bg: #ffffff;
+  --store-header-text: #111827;
+}
+
+/* Theme: Minimal */
+.theme-minimal {
+  --store-bg: #ffffff;
+  --store-text: #1f2937;
+  --store-border: transparent; /* No borders in minimal */
+  --store-radius: 0px; /* Sharp edges */
+  --store-header-bg: transparent;
+  --store-shadow: none;
+}
+
+/* Theme: Classic */
+.theme-classic {
+  --store-bg: #f9fafb;
+  --store-text: #111827;
+  --store-border: #d1d5db; /* Prominent borders */
+  --store-radius: 4px;
+  --store-header-bg: #1f2937; /* Dark header typical of classic e-commerce */
+  --store-header-text: #ffffff;
+  --store-font: 'Georgia', serif; /* Classic font vibe */
+  --store-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Theme: Modern */
+.theme-modern {
+  --store-bg: #0f172a; /* Dark mode base */
+  --store-text: #f8fafc;
+  --store-border: rgba(255, 255, 255, 0.1);
+  --store-radius: 16px; /* Heavy rounding */
+  --store-header-bg: rgba(15, 23, 42, 0.8); /* Glassmorphism */
+  --store-header-text: #f8fafc;
+  --store-font: 'Outfit', sans-serif;
+  --store-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+}

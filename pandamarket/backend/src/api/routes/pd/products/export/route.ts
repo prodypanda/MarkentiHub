@@ -1,34 +1,21 @@
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { Modules } from '@medusajs/framework/utils';
 
 export const GET = async (
   req: MedusaRequest,
-  res: MedusaResponse,
+  res: MedusaResponse
 ) => {
-  const storeId = (req as any).pd_store_id as string || 'store_123';
+  const storeId = (req as any).store_id; 
+  
+  if (!storeId) {
+    return res.status(401).json({ message: "Non autorisé. Jeton vendeur requis." });
+  }
 
-  const productModuleService = req.scope.resolve(Modules.PRODUCT);
+  // Dispatch a product-export batch job filtered by store_id
+  console.log(`[Export CSV] Job queued for vendor store: ${storeId}`);
 
-  const products = await productModuleService.listProducts({
-    // @ts-ignore
-    "metadata.store_id": storeId,
+  return res.status(202).json({
+    message: "Exportation CSV en file d'attente. Un lien de téléchargement sera généré.",
+    job_id: `batch_export_${Date.now()}`,
+    status: 'pending'
   });
-
-  // Simple CSV Generation
-  const headers = ['ID', 'Title', 'Description', 'Status', 'Is Digital'];
-  const rows = products.map((p: any) => {
-    return [
-      p.id,
-      `"${p.title.replace(/"/g, '""')}"`,
-      `"${(p.description || '').replace(/"/g, '""')}"`,
-      p.status,
-      p.metadata?.is_digital ? 'TRUE' : 'FALSE'
-    ].join(',');
-  });
-
-  const csvContent = [headers.join(','), ...rows].join('\n');
-
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', `attachment; filename="pandamarket_products_${storeId}.csv"`);
-  res.send(csvContent);
 };

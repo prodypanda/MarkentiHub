@@ -8,6 +8,17 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const HUB_DOMAIN = process.env.NEXT_PUBLIC_HUB_DOMAIN || 'pandamarket.local';
 
+function applySecurityHeaders(response: NextResponse) {
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  response.headers.set('Content-Security-Policy', "default-src 'self'; img-src 'self' *.r2.cloudflarestorage.com");
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const { pathname } = request.nextUrl;
@@ -19,19 +30,19 @@ export async function middleware(request: NextRequest) {
   if (cleanHostname === HUB_DOMAIN || cleanHostname === `www.${HUB_DOMAIN}`) {
     const response = NextResponse.next();
     response.headers.set('x-pd-route-type', 'hub');
-    return response;
+    return applySecurityHeaders(response);
   }
 
   // ─── Admin Panel ───
   if (cleanHostname === `admin.${HUB_DOMAIN}`) {
     const response = NextResponse.next();
     response.headers.set('x-pd-route-type', 'admin');
-    return response;
+    return applySecurityHeaders(response);
   }
 
   // ─── API Passthrough ───
   if (cleanHostname === `api.${HUB_DOMAIN}`) {
-    return NextResponse.next();
+    return applySecurityHeaders(NextResponse.next());
   }
 
   // ─── Vendor Storefront (subdomain or custom domain) ───
@@ -57,7 +68,7 @@ export async function middleware(request: NextRequest) {
       response.headers.set('x-pd-store-id', data.store.id);
       response.headers.set('x-pd-store-subdomain', data.store.subdomain || '');
       response.headers.set('x-pd-store-theme', data.store.theme_id || 'minimal');
-      return response;
+      return applySecurityHeaders(response);
     }
   } catch {
     // If API is unreachable, fall through to hub
@@ -66,7 +77,7 @@ export async function middleware(request: NextRequest) {
   // ─── Fallback to Hub ───
   const response = NextResponse.next();
   response.headers.set('x-pd-route-type', 'hub');
-  return response;
+  return applySecurityHeaders(response);
 }
 
 export const config = {

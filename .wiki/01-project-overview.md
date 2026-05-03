@@ -20,6 +20,8 @@ PandaMarket is a **hybrid MaaS/SaaS platform** built for the Tunisian market. Th
 | 📦 Digital products | Download links with presigned S3 URLs |
 | 🔐 KYC verification | Vendors submit RC + CIN documents for verification |
 | 📊 7 subscription tiers | Free → Starter → Regular → Agency → Pro → Golden → Platinum |
+| 🛡️ Security Hardening | Custom API rate limiting & strict security headers (CSP, HSTS) |
+| ⚡ Real-time Alerts | Live notifications via Socket.io / WebSockets |
 
 ---
 
@@ -61,9 +63,10 @@ PandaMarket is a **hybrid MaaS/SaaS platform** built for the Tunisian market. Th
 | **MedusaJS v2** | 2.14.2 | E-commerce framework |
 | **TypeScript** | 5.6+ | Type safety |
 | **PostgreSQL** | 16 | Primary database |
-| **Redis** | 7.2 | Caching, event bus, sessions |
+| **Redis** | 7.2 | Caching, event bus, sessions, rate limiting |
 | **Meilisearch** | 1.8 | Full-text product search |
 | **MinIO** | Latest | S3-compatible object storage |
+| **Vitest** | Latest | Next-generation testing framework |
 
 ### Frontend
 | Technology | Version | Purpose |

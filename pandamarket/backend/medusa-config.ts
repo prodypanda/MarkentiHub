@@ -76,5 +76,20 @@ export default defineConfig({
         ],
       },
     },
+    {
+      resolve: '@medusajs/medusa/fulfillment',
+      options: {
+        providers: [
+          {
+            resolve: './src/modules/fulfillment-providers/aramex',
+            id: 'pd-aramex',
+          },
+          {
+            resolve: './src/modules/fulfillment-providers/la-poste',
+            id: 'pd-laposte',
+          },
+        ],
+      },
+    },
   ],
 });
