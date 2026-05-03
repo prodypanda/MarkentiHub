@@ -4,7 +4,9 @@ import { authenticateApiKey } from './middlewares/api-key';
 import { authenticateVendor } from './middlewares/authenticate-vendor';
 import { authenticateAdmin } from './middlewares/authenticate-admin';
 import { validateUpload } from './middlewares/upload-validation';
-import { publicRateLimit, authRateLimit } from './middlewares/rate-limit';
+import { publicRateLimit, authRateLimit, rateLimit } from './middlewares/rate-limit';
+
+const authStrictRateLimit = rateLimit({ max: 5, windowMs: 15 * 60 * 1000 }); // 5 per 15 min
 
 export default defineMiddlewares({
   routes: [
@@ -17,6 +19,14 @@ export default defineMiddlewares({
       // Apply API Key validation globally (skips when header is absent)
       matcher: '/api/pd/*',
       middlewares: [publicRateLimit, authenticateApiKey],
+    },
+
+    // ──────────────────────────────────────────────────────────────
+    // Public auth routes — rate-limited but NO JWT required
+    // ──────────────────────────────────────────────────────────────
+    {
+      matcher: '/api/pd/auth/*',
+      middlewares: [authStrictRateLimit],
     },
 
     // ──────────────────────────────────────────────────────────────

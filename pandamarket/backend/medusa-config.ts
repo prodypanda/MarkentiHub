@@ -54,6 +54,9 @@ export default defineConfig({
       resolve: './src/modules/pd-notifications',
     },
     {
+      resolve: './src/modules/pd-vendor',
+    },
+    {
       resolve: '@medusajs/medusa/payment',
       options: {
         providers: [

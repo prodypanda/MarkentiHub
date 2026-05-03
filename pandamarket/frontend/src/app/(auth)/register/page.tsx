@@ -2,15 +2,20 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Mail, Lock, User, Store, Globe, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { api } from '@/lib/api';
+import { saveAuthSession } from '@/lib/auth';
 
 const STEPS = ['Compte', 'Boutique', 'Confirmation'];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', password: '',
     store_name: '', subdomain: '', category: '',
@@ -22,9 +27,27 @@ export default function RegisterPage() {
     e.preventDefault();
     if (step < 2) { setStep(step + 1); return; }
     setLoading(true);
+    setError('');
     try {
-      await new Promise((r) => setTimeout(r, 2000));
-      // TODO: POST /api/pd/auth/register
+      const { access_token, vendor, store } = await api.register({
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        password: form.password,
+        store_name: form.store_name,
+        subdomain: form.subdomain,
+        category: form.category || undefined,
+      });
+      saveAuthSession(access_token, vendor, store);
+      api.setToken(access_token);
+      router.push('/dashboard');
+    } catch (err: any) {
+      const message = err?.error?.message || 'Une erreur est survenue lors de la création de votre compte';
+      setError(message);
+      // Go back to step 0 if it's an email/account error
+      if (err?.error?.code === 'PD_CONFLICT_EMAIL') setStep(0);
+      // Stay on step 1 if it's a subdomain error
+      if (err?.error?.code === 'PD_CONFLICT_SUBDOMAIN') setStep(1);
     } finally { setLoading(false); }
   };
 
@@ -48,6 +71,17 @@ export default function RegisterPage() {
         <p style={{ color: 'var(--pd-text-secondary)', marginBottom: 32 }}>
           Gratuit. Sans engagement. En 2 minutes.
         </p>
+
+        {/* Error banner */}
+        {error && (
+          <div style={{
+            padding: '12px 16px', borderRadius: 'var(--pd-radius-md)',
+            backgroundColor: 'var(--pd-red-bg)', color: 'var(--pd-red)',
+            fontSize: 'var(--pd-fs-sm)', marginBottom: 20,
+          }}>
+            {error}
+          </div>
+        )}
 
         {/* Stepper */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>

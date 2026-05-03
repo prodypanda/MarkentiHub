@@ -46,12 +46,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // ─── Vendor Storefront (subdomain or custom domain) ───
-  let storeSubdomain: string | null = null;
-
-  // Check if it's a subdomain of the hub domain
-  if (cleanHostname.endsWith(`.${HUB_DOMAIN}`)) {
-    storeSubdomain = cleanHostname.replace(`.${HUB_DOMAIN}`, '');
-  }
 
   // Resolve the store from the backend API
   try {
@@ -63,11 +57,17 @@ export async function middleware(request: NextRequest) {
 
     if (resolveRes.ok) {
       const data = await resolveRes.json();
-      const response = NextResponse.next();
+
+      // Rewrite to the internal storefront path while preserving the browser URL.
+      // (store)/storefront/page.tsx handles the storefront homepage.
+      const targetPathname = pathname === '/' ? '/storefront' : pathname;
+      const rewriteUrl = new URL(targetPathname, request.url);
+      const response = NextResponse.rewrite(rewriteUrl);
       response.headers.set('x-pd-route-type', 'store');
       response.headers.set('x-pd-store-id', data.store.id);
       response.headers.set('x-pd-store-subdomain', data.store.subdomain || '');
       response.headers.set('x-pd-store-theme', data.store.theme_id || 'minimal');
+      response.headers.set('x-pd-store-name', data.store.name || '');
       return applySecurityHeaders(response);
     }
   } catch {

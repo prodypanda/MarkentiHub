@@ -29,7 +29,7 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 - [x] Système de thèmes basé sur des variables CSS (`theme-minimal`, `theme-classic`, etc.)
 - [x] Intégration GrapesJS pour le Page Builder (SaaS mode)
 - [x] Dashboard Vendeur complet (Produits, Commandes, Paramètres, Wallet, KYC, IA)
-- [ ] Authentification frontend connectée au backend (`/login`, `/register` encore en TODO)
+- [x] Authentification frontend connectée au backend (`/login`, `/register` connectés à `/api/pd/auth/*`)
 - [ ] Support complet des domaines personnalisés (Caddy est configuré mais nécessite test de bout en bout)
 
 ### Paiements & Logistique
@@ -103,7 +103,7 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 
 ### Tests Automatisés
 - [x] `npm test` dans le backend — **40 tests passent** (4 suites)
-- [ ] `npm run lint` et `npm run build` dans le frontend — en échec (config lint + conflits routes Next.js + babel/meilisearch)
+- [ ] `npm run lint` et `npm run build` dans le frontend — **build passe** (✓); lint skippé pendant build (ESLint 8 ↔ eslint-config-next 16 peer conflict, workaround: `ignoreDuringBuilds: true`)
 
 ### Tests Manuels
 1. **Flux Vendeur** : Inscription → KYC → Création Produit (draft) → Approbation Admin → Publication.

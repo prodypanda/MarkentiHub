@@ -25,6 +25,22 @@ class PdApiClient {
   async put<T = any>(path: string, body?: any) { return this.request<T>('PUT', `/api${path}`, { body }); }
   async delete<T = any>(path: string) { return this.request<T>('DELETE', `/api${path}`); }
 
+  // Auth
+  async login(email: string, password: string) {
+    return this.request<{ access_token: string; vendor: any; store: any }>(
+      'POST', '/api/pd/auth/login', { body: { email, password } }
+    );
+  }
+
+  async register(data: {
+    first_name: string; last_name: string; email: string; password: string;
+    store_name: string; subdomain: string; category?: string;
+  }) {
+    return this.request<{ access_token: string; vendor: any; store: any }>(
+      'POST', '/api/pd/auth/register', { body: data }
+    );
+  }
+
   // Specific domain methods
   async getStore(id: string) { return this.request('GET', `/api/pd/stores/${id}`); }
   async getProduct(id: string) { return this.request('GET', `/store/products/${id}`); }

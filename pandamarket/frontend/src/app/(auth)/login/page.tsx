@@ -2,11 +2,15 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { api } from '@/lib/api';
+import { saveAuthSession } from '@/lib/auth';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -18,10 +22,13 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      // TODO: integrate with backend
-      await new Promise((r) => setTimeout(r, 1500));
-    } catch {
-      setError('Email ou mot de passe incorrect');
+      const { access_token, vendor, store } = await api.login(email, password);
+      saveAuthSession(access_token, vendor, store);
+      api.setToken(access_token);
+      router.push('/dashboard');
+    } catch (err: any) {
+      const message = err?.error?.message || 'Email ou mot de passe incorrect';
+      setError(message);
     } finally {
       setLoading(false);
     }

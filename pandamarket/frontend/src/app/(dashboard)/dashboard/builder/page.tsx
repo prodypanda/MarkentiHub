@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import GjsEditor from '@grapesjs/react';
-import type { Editor } from 'grapesjs';
+import grapesjs, { type Editor } from 'grapesjs';
 import grapesjsPresetWebpage from 'grapesjs-preset-webpage';
 import Button from '@/components/ui/Button';
 import { Save } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function BuilderPage() {
     const css = editor.getCss();
     
     // In a real implementation, this would save to the pd-store module via API
-    console.log('Saved layout!', { htmlLength: html.length, cssLength: css.length });
+    console.log('Saved layout!', { htmlLength: html.length, cssLength: css?.length ?? 0 });
     alert('Layout sauvegardé avec succès!');
   };
 
@@ -29,7 +29,7 @@ export default function BuilderPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 'var(--pd-fs-2xl)', fontWeight: 800, marginBottom: 4 }}>Constructeur de Boutique</h1>
-          <p style={{ color: 'var(--pd-text-secondary)' }}>Personnalisez l'apparence de votre vitrine (SaaS Mode) via GrapesJS</p>
+          <p style={{ color: 'var(--pd-text-secondary)' }}>Personnalisez l&apos;apparence de votre vitrine (SaaS Mode) via GrapesJS</p>
         </div>
         <Button onClick={saveLayout} icon={<Save size={16} />}>Sauvegarder le layout</Button>
       </div>
@@ -37,6 +37,7 @@ export default function BuilderPage() {
       <div style={{ flex: 1, border: '1px solid var(--pd-border)', borderRadius: 'var(--pd-radius-lg)', overflow: 'hidden', backgroundColor: '#fff' }}>
         <GjsEditor
           className="gjs-custom-editor"
+          grapesjs={grapesjs}
           options={{
             height: '100%',
             storageManager: false,
