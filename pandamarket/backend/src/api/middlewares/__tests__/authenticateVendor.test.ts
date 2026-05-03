@@ -65,6 +65,24 @@ describe('authenticateVendor Middleware', () => {
     });
   });
 
+  it('should return 401 if token payload is missing store_id', async () => {
+    mockReq.headers.authorization = 'Bearer invalid-payload-token';
+    jwtVerifyMock.mockReturnValue({ sub: 'user_123', role: UserRole.Vendor });
+
+    await authenticateVendor(
+      mockReq as unknown as MedusaRequest,
+      mockRes,
+      mockNext as MedusaNextFunction,
+    );
+
+    expect(mockNext).toHaveBeenCalledWith(expect.any(PdAuthenticationError));
+    expect(mockNext.mock.calls[0][0]).toMatchObject({
+      code: 'PD_AUTH_TOKEN_INVALID',
+      statusCode: 401,
+    });
+    expect(mockReq.pd_store_id).toBeUndefined();
+  });
+
   it('should inject store_id into scope and call next() on valid token', async () => {
     mockReq.headers.authorization = 'Bearer valid-token';
     jwtVerifyMock.mockReturnValue({ sub: 'user_123', store_id: 'store_123', role: UserRole.Vendor });

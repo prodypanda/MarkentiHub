@@ -71,7 +71,7 @@ Ce document présente l'état d'avancement du projet PandaMarket, les fonctionna
 - [ ] Réaliser des tests de bout en bout sur le flux de paiement direct (Pro+)
 - [ ] Valider le rendu du Page Builder GrapesJS avec les variables CSS des thèmes
 - [ ] Tester la synchronisation Meilisearch avec un grand volume de produits (> 1000)
-- [ ] Vérifier la gestion des erreurs sur les Workers BullMQ (Retry policy)
+- [x] Vérifier la gestion des erreurs sur les Workers BullMQ (Retry policy) — retry/backoff centralisés, validation Zod des jobs, logs structurés
 
 ### Phase B : Polish UI/UX (Semaine 2)
 - [ ] Améliorer les micro-animations du Hub Central

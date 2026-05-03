@@ -6,6 +6,7 @@
 // =============================================================================
 
 import type { MedusaRequest, MedusaResponse, MedusaNextFunction } from '@medusajs/framework/http';
+import { z } from 'zod';
 
 import {
   PdFileInvalidTypeError,
@@ -14,31 +15,52 @@ import {
 } from '../../utils/errors';
 import { FILE_CONSTRAINTS } from '../../utils/constants';
 
-interface UploadValidationBody {
-  mimeType?: string;
-  fileSize?: number;
-  content_type?: string;
-  file_size?: number;
-}
-
 const ALLOWED_MIME_TYPES: readonly string[] = [
   ...FILE_CONSTRAINTS.ALLOWED_IMAGE_TYPES,
   ...FILE_CONSTRAINTS.ALLOWED_KYC_TYPES,
 ];
+
+const uploadValidationSchema = z
+  .object({
+    mimeType: z.string().optional(),
+    fileSize: z.coerce.number().int().positive().optional(),
+    content_type: z.string().optional(),
+    file_size: z.coerce.number().int().positive().optional(),
+  })
+  .passthrough()
+  .superRefine((data, ctx) => {
+    if (!data.mimeType && !data.content_type) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['content_type'],
+        message: 'mimeType/content_type est requis',
+      });
+    }
+    if (data.fileSize === undefined && data.file_size === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['file_size'],
+        message: 'fileSize/file_size est requis',
+      });
+    }
+  });
 
 export const validateUpload = (
   req: MedusaRequest,
   _res: MedusaResponse,
   next: MedusaNextFunction,
 ): void => {
-  const body = (req.body ?? {}) as UploadValidationBody;
-  const mimeType = body.mimeType ?? body.content_type;
-  const fileSize = body.fileSize ?? body.file_size;
-
-  if (!mimeType || typeof fileSize !== 'number') {
+  const parsed = uploadValidationSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
     return next(
       new PdValidationError('mimeType/content_type et fileSize/file_size sont requis'),
     );
+  }
+
+  const mimeType = parsed.data.mimeType ?? parsed.data.content_type;
+  const fileSize = parsed.data.fileSize ?? parsed.data.file_size;
+  if (!mimeType || typeof fileSize !== 'number') {
+    return next(new PdValidationError('mimeType/content_type et fileSize/file_size sont requis'));
   }
 
   if (!ALLOWED_MIME_TYPES.includes(mimeType)) {

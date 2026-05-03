@@ -25,6 +25,17 @@ function getJwtSecret(): string {
   return secret;
 }
 
+function getCorsOrigins(): string[] {
+  const origins = process.env.PD_STORE_CORS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (origins?.length) return origins;
+  if (process.env.PD_NODE_ENV === 'production') {
+    throw new Error('PD_STORE_CORS must be set for Socket.io CORS in production');
+  }
+  return ['http://localhost:3000'];
+}
+
 function isJoinPayload(data: unknown): data is SocketJoinPayload {
   if (!data || typeof data !== 'object') {
     return false;
@@ -33,10 +44,18 @@ function isJoinPayload(data: unknown): data is SocketJoinPayload {
   return typeof payload.storeId === 'string' && typeof payload.token === 'string';
 }
 
+function isSocketJwtPayload(data: unknown): data is PdSocketJwtPayload {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const payload = data as Record<string, unknown>;
+  return typeof payload.store_id === 'string' && payload.store_id.length > 0;
+}
+
 export function initSocketServer(server: HttpServer) {
   io = new SocketServer(server, {
     cors: {
-      origin: process.env.PD_STORE_CORS?.split(',') || ['http://localhost:3000'],
+      origin: getCorsOrigins(),
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -55,7 +74,12 @@ export function initSocketServer(server: HttpServer) {
 
       const storeId = data.storeId;
       try {
-        const decoded = jwt.verify(data.token, getJwtSecret()) as PdSocketJwtPayload;
+        const decoded = jwt.verify(data.token, getJwtSecret());
+        if (!isSocketJwtPayload(decoded)) {
+          logger.warn({ socket_id: socket.id, store_id: storeId }, 'Invalid socket token payload');
+          socket.emit('error', { code: 'PD_AUTH_TOKEN_INVALID', message: 'Invalid socket token' });
+          return;
+        }
         if (decoded.store_id !== storeId) {
           logger.warn({ socket_id: socket.id, store_id: storeId }, 'Socket store mismatch');
           socket.emit('error', { code: 'PD_PERM_NOT_OWNER', message: 'Invalid store room' });

@@ -14,7 +14,7 @@ import { UserRole } from '../../utils/constants';
 export interface PdJwtPayload {
   sub: string;
   store_id: string;
-  role: UserRole;
+  role?: UserRole;
   iat?: number;
   exp?: number;
 }
@@ -32,6 +32,21 @@ function getJwtSecret(): string {
     );
   }
   return secret;
+}
+
+function isPdJwtPayload(value: unknown): value is PdJwtPayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const payload = value as Record<string, unknown>;
+  const role = payload.role;
+  return (
+    typeof payload.sub === 'string' &&
+    payload.sub.length > 0 &&
+    typeof payload.store_id === 'string' &&
+    payload.store_id.length > 0 &&
+    (role === undefined || Object.values(UserRole).includes(role as UserRole))
+  );
 }
 
 export const authenticateVendor = async (
@@ -57,7 +72,11 @@ export const authenticateVendor = async (
 
   let decoded: PdJwtPayload;
   try {
-    decoded = jwt.verify(token, getJwtSecret()) as PdJwtPayload;
+    const verified = jwt.verify(token, getJwtSecret());
+    if (!isPdJwtPayload(verified)) {
+      return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'Invalid token payload'));
+    }
+    decoded = verified;
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       return next(new PdTokenExpiredError());
