@@ -52,11 +52,6 @@ describe('authenticateVendor Middleware', () => {
 
   it('should call next(error) with 401 if token is expired', async () => {
     mockReq.headers.authorization = 'Bearer expired-token';
-    (jwt.verify as any).mockImplementation(() => {
-      const err = new Error('jwt expired') as any;
-      err.name = 'TokenExpiredError';
-      throw err;
-    });
     // Make jwt.TokenExpiredError check work
     (jwt as any).TokenExpiredError = class TokenExpiredError extends Error {
       constructor() { super('jwt expired'); this.name = 'TokenExpiredError'; }

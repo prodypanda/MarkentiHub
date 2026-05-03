@@ -97,8 +97,8 @@ export const POST = async (
       status: 'published', // Default to published
       thumbnail: data.images && data.images.length > 0 ? data.images[0] : null,
       images: data.images ? data.images.map(url => ({ url })) : [],
-        metadata: {
-          store_id: storeId,
+      metadata: {
+        store_id: storeId,
         category: data.category,
         is_digital: data.is_digital,
         price: data.price,
