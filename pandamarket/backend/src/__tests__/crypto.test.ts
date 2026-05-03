@@ -16,9 +16,10 @@ import {
   generateSecureToken,
 } from '../utils/crypto';
 
-// Set the encryption key for tests
+// Set required crypto secrets for tests
 beforeAll(() => {
   process.env.PD_ENCRYPTION_KEY = 'test_encryption_key_32_chars__!!';
+  process.env.PD_API_KEY_PEPPER = 'test_api_key_pepper_for_pbkdf2';
 });
 
 describe('Crypto — AES-256-GCM Encryption', () => {

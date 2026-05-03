@@ -11,6 +11,9 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SCRYPT_KEYLEN = 64;
 const SCRYPT_SALT_LEN = 32;
+const API_KEY_PBKDF2_ITERATIONS = 210_000;
+const API_KEY_PBKDF2_KEYLEN = 32;
+const API_KEY_PBKDF2_DIGEST = 'sha256';
 const scryptAsync = promisify(crypto.scrypt);
 
 /**
@@ -74,12 +77,29 @@ export function decryptAES256(encryptedData: string): string {
   return decrypted;
 }
 
+function getApiKeyPepper(): string {
+  const pepper = process.env.PD_API_KEY_PEPPER;
+  if (!pepper) {
+    throw new Error('PD_API_KEY_PEPPER environment variable is not set');
+  }
+  return pepper;
+}
+
 /**
- * Hash an API key using SHA-256.
+ * Hash an API key using PBKDF2 (deterministic with server-side pepper).
  * The raw key is shown to the vendor once; only the hash is stored.
  */
 export function hashApiKey(apiKey: string): string {
-  return crypto.createHash('sha256').update(apiKey).digest('hex');
+  const pepper = getApiKeyPepper();
+  return crypto
+    .pbkdf2Sync(
+      apiKey,
+      pepper,
+      API_KEY_PBKDF2_ITERATIONS,
+      API_KEY_PBKDF2_KEYLEN,
+      API_KEY_PBKDF2_DIGEST,
+    )
+    .toString('hex');
 }
 
 /**
