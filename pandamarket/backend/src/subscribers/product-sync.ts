@@ -7,20 +7,18 @@
 import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
 
-import { getMeiliClient, MEILI_PRODUCTS_INDEX } from '../utils/meilisearch';
+import {
+  buildMeiliProductDocument,
+  deleteProductDocument,
+  getProductStoreId,
+  indexProductDocuments,
+  type MeiliProductSource,
+} from '../utils/meilisearch';
 import { createServiceLogger } from '../utils/logger';
 
 const logger = createServiceLogger('ProductSyncSubscriber');
 
-interface ProductLike {
-  id: string;
-  title: string;
-  description?: string | null;
-  thumbnail?: string | null;
-  status: string;
-  created_at: string;
-  metadata?: Record<string, unknown> | null;
-}
+type ProductLike = MeiliProductSource;
 
 interface PdStoreLike {
   id: string;
@@ -41,13 +39,12 @@ export default async function productSyncSubscriber({
 }: SubscriberArgs<{ id: string }>): Promise<void> {
   const productModuleService = container.resolve(Modules.PRODUCT) as unknown as IProductModuleService;
   const pdStoreService = container.resolve<IPdStoreService>('pdStoreService');
-  const index = getMeiliClient().index(MEILI_PRODUCTS_INDEX);
 
   const productId = data.id;
 
   if (name === 'product.deleted') {
     try {
-      await index.deleteDocument(productId);
+      await deleteProductDocument(productId);
     } catch (err) {
       logger.warn({ err, product_id: productId }, 'Meilisearch delete failed');
     }
@@ -66,15 +63,14 @@ export default async function productSyncSubscriber({
 
   if (product.status !== 'published') {
     try {
-      await index.deleteDocument(productId);
+      await deleteProductDocument(productId);
     } catch (err) {
       logger.debug({ err, product_id: productId }, 'Meilisearch delete (non-published) failed');
     }
     return;
   }
 
-  const metadata = (product.metadata ?? {}) as { store_id?: string; category?: string; price?: number };
-  const storeId = metadata.store_id;
+  const storeId = getProductStoreId(product);
   let vendorName = 'PandaMarket Vendor';
 
   if (storeId) {
@@ -86,21 +82,10 @@ export default async function productSyncSubscriber({
     }
   }
 
-  const document = {
-    id: product.id,
-    title: product.title,
-    description: product.description ?? '',
-    thumbnail: product.thumbnail ?? null,
-    status: product.status,
-    created_at: product.created_at,
-    category: metadata.category ?? 'autre',
-    store_id: storeId ?? null,
-    vendor_name: vendorName,
-    price: metadata.price ?? 0,
-  };
+  const document = buildMeiliProductDocument(product, vendorName);
 
   try {
-    await index.addDocuments([document]);
+    await indexProductDocuments([document], 1);
   } catch (err) {
     logger.error({ err, product_id: productId }, 'Meilisearch upsert failed');
   }
