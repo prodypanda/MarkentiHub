@@ -19,7 +19,7 @@ export const authenticateVendor = async (
   try {
     const jwtSecret = process.env.PD_JWT_SECRET;
     if (!jwtSecret) {
-      return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'JWT secret is not configured'));
+      return next(new PdAuthenticationError('PD_AUTH_TOKEN_INVALID', 'Authentication configuration error'));
     }
 
     const decoded = jwt.verify(token, jwtSecret) as any;
