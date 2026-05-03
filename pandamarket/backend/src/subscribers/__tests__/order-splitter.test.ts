@@ -1,4 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock medusa framework modules before importing the subscriber to avoid
+// the ajv-draft-04 → ajv@8 dependency chain that isn't installed.
+vi.mock('@medusajs/framework', () => ({}));
+vi.mock('@medusajs/framework/utils', () => ({
+  Modules: {
+    ORDER: 'order',
+    FULFILLMENT: 'fulfillment',
+  },
+}));
+
 import orderSplitterSubscriber from '../order-splitter';
 
 // Mock the socket so we don't trigger network events during tests
@@ -73,3 +84,4 @@ describe('Order Splitter Subscriber', () => {
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Generating distinct fulfillment group for vendor: store_C (1 items)'));
   });
 });
+

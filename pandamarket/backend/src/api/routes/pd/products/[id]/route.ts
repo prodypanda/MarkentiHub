@@ -1,16 +1,18 @@
 // @ts-nocheck
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { z } from 'zod';
-import { PdBadRequestError } from '../../../../../utils/errors';
+import { PdBadRequestError, PdForbiddenError, PdNotOwnerError } from '../../../../../utils/errors';
 import { Modules } from '@medusajs/framework/utils';
 
 export const PUT = async (
   req: MedusaRequest,
   res: MedusaResponse,
 ) => {
+  const storeId = (req as any).pd_store_id as string;
+  if (!storeId) throw new PdForbiddenError();
+
   const productId = req.params.id;
   const schema = z.object({
-    store_id: z.string(),
     title: z.string().min(1).optional(),
     description: z.string().optional(),
     price: z.number().min(0).optional(),
@@ -27,16 +29,13 @@ export const PUT = async (
   const data = parsed.data;
   const productModuleService = req.scope.resolve(Modules.PRODUCT);
 
-  // 1. Verify ownership (store_id)
+  // 1. Verify ownership via authenticated store_id
   const product = await productModuleService.retrieveProduct(productId);
-  if ((product.metadata as Record<string, any>)?.store_id !== data.store_id) {
-    throw new PdBadRequestError('Unauthorized to edit this product');
+  if ((product.metadata as Record<string, any>)?.store_id !== storeId) {
+    throw new PdNotOwnerError(productId);
   }
 
-  // 2. We don't need quota checks for PUT (unless image count increases, 
-  // but for MVP we skip it here and rely on the UI/initial creation limits).
-
-  // 3. Update the product
+  // 2. Update the product
   const updateData: any = {};
   if (data.title) updateData.title = data.title;
   if (data.description !== undefined) updateData.description = data.description;
@@ -64,11 +63,20 @@ export const DELETE = async (
   req: MedusaRequest,
   res: MedusaResponse,
 ) => {
+  const storeId = (req as any).pd_store_id as string;
+  if (!storeId) throw new PdForbiddenError();
+
   const productId = req.params.id;
-  // Note: in a real app, verify the authenticated user's store_id
-  
   const productModuleService = req.scope.resolve(Modules.PRODUCT);
+
+  // Verify ownership before deleting
+  const product = await productModuleService.retrieveProduct(productId);
+  if ((product.metadata as Record<string, any>)?.store_id !== storeId) {
+    throw new PdNotOwnerError(productId);
+  }
+
   await productModuleService.deleteProducts(productId);
 
   res.status(200).json({ success: true });
 };
+
