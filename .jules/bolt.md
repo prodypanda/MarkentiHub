@@ -1,0 +1,3 @@
+## 2026-05-16 - MedusaService Bulk Operations
+**Learning:** In Medusa v2, services extending `MedusaService` from `@medusajs/framework/utils` (like `PdNotificationService` extending `MedusaService({ Notification })`) auto-generate CRUD methods such as `updateNotifications`. These methods accept an array of objects to perform bulk updates efficiently. A `for` loop issuing individual `await this.updateNotifications(...)` calls introduces an N+1 query problem, which can be optimized into a single `await this.updateNotifications([{...}, {...}])` call.
+**Action:** Always check if a loop containing an `await updateX` or `await createX` call can be mapped into an array and passed directly to the generated MedusaService method to prevent N+1 issues and reduce database load.

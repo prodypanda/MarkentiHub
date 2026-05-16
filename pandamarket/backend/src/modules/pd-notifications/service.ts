@@ -69,12 +69,16 @@ class PdNotificationService extends MedusaService({ Notification }) {
       filters: { user_id: userId, is_read: false },
     });
 
-    for (const notification of unread) {
-      await this.updateNotifications({
+    if (unread.length === 0) return;
+
+    // Optimization: Bulk update instead of N+1 individual updates
+    // Reduces DB roundtrips from O(n) to O(1) for marking all as read
+    await this.updateNotifications(
+      unread.map((notification) => ({
         id: notification.id,
         is_read: true,
-      });
-    }
+      }))
+    );
   }
 }
 
