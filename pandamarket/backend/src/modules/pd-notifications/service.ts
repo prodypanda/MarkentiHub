@@ -63,18 +63,21 @@ class PdNotificationService extends MedusaService({ Notification }) {
 
   /**
    * Mark all notifications as read for a user
+   * Optimized: Uses bulk update to prevent N+1 query problem
    */
   async markAllAsRead(userId: string): Promise<void> {
     const unread = await this.listNotifications({
       filters: { user_id: userId, is_read: false },
     });
 
-    for (const notification of unread) {
-      await this.updateNotifications({
+    if (unread.length === 0) return;
+
+    await this.updateNotifications(
+      unread.map((notification) => ({
         id: notification.id,
         is_read: true,
-      });
-    }
+      }))
+    );
   }
 }
 
