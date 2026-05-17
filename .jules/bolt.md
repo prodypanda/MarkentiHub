@@ -1,0 +1,3 @@
+## 2026-05-17 - MedusaService Bulk Updates to Avoid N+1
+**Learning:** `MedusaService` from `@medusajs/framework/utils` supports bulk operations by passing an array of objects to auto-generated CRUD methods like `update[EntityName]s([])`. In `markAllAsRead`, updating each unread notification sequentially with a loop caused N+1 database queries. By passing an array of `{ id, is_read }` objects, Medusa handles it efficiently in a single bulk operation.
+**Action:** When updating or creating multiple records in MedusaJS v2 modules, always look for the plural methods (e.g. `updateNotifications`) and pass an array to avoid O(n) roundtrips to the DB.
