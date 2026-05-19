@@ -156,16 +156,9 @@ export function verifyWebhookSignature(
   secret: string,
 ): boolean {
   const expected = signWebhookPayload(payload, secret);
-  const signatureBuffer = Buffer.from(signature, 'hex');
-  const expectedBuffer = Buffer.from(expected, 'hex');
-
-  if (signatureBuffer.length !== expectedBuffer.length) {
-    return false;
-  }
-
   return crypto.timingSafeEqual(
-    signatureBuffer,
-    expectedBuffer,
+    Buffer.from(signature, 'hex'),
+    Buffer.from(expected, 'hex'),
   );
 }
 
