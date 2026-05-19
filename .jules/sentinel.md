@@ -1,0 +1,4 @@
+## 2024-05-19 - [Denial of Service via `crypto.timingSafeEqual` Length Mismatch]
+**Vulnerability:** Node.js's `crypto.timingSafeEqual` throws an unhandled exception (`ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH`) if the two buffers being compared differ in length. In `verifyWebhookSignature`, this could allow an attacker to crash the Node process by providing a signature string of unexpected length.
+**Learning:** Security APIs that guarantee constant-time execution often make strict assumptions about input shapes to prevent side-channel leaks. Here, failing to manually validate the assumption (matching length) turns a secure comparison function into a DoS vector.
+**Prevention:** Always verify that buffer lengths match before executing `crypto.timingSafeEqual`. If they don't match, return `false` immediately. This does not introduce a timing vulnerability because the expected length (derived from the hashing algorithm, e.g., HMAC-SHA256) is constant and public.
