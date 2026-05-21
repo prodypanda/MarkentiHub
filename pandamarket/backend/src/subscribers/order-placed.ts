@@ -100,9 +100,14 @@ export default async function orderPlacedSubscriber({
     return;
   }
 
+  // ⚡ Bolt Optimization: Batch fetch stores instead of N+1 individual queries
+  const storeIds = Array.from(storeTotals.keys());
+  const stores = await pdStoreService.listPdStores({ filters: { id: { $in: storeIds } as any } });
+  const storeMap = new Map(stores.map(s => [s.id, s]));
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) {
         logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
         continue;
