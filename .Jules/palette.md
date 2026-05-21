@@ -1,0 +1,3 @@
+## 2024-05-21 - [Input Accessibility & Robust ID Generation]
+**Learning:** React 18's `useId()` should always be used for creating accessible input labels and linking helper text/error messages via `aria-describedby` to avoid ID collisions and hydration mismatches during SSR. Relying on string-replaced labels like `id || label?.toLowerCase().replace(/\s+/g, '-')` can lead to duplicate IDs and break accessibility mappings.
+**Action:** Always utilize `useId()` for generating unique IDs within form controls and explicitly set `aria-invalid` and `aria-describedby` when conditionally rendering error or hint messages.
