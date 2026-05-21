@@ -1,0 +1,3 @@
+## 2026-05-21 - [Backend Database Query Batching Optimizations]
+**Learning:** Found N+1 query issues in subscribers (`order-placed.ts` and `outgoing-webhooks.ts`) fetching stores in a loop individually. Replaced individual `await pdStoreService.listPdStores()` calls inside `for` loops with a single batched call passing an array to `$in` before iterating.
+**Action:** Always check loop bodies for async database calls. If the ORM/service supports bulk operations by passing an array, aggregate IDs/data and perform a single call outside the loop to prevent unnecessary network and query execution latency. Also be careful to correctly type `$in` queries if relying on `any` to bypass restrictive generic type constraints from the MedusaJS framework.

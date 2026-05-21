@@ -59,9 +59,14 @@ export default async function outgoingWebhooksSubscriber({
     if (meta.store_id) storeIds.add(meta.store_id);
   }
 
-  for (const storeId of storeIds) {
+  // ⚡ Bolt Optimization: Batch fetch stores instead of N+1 individual queries
+  const storeIdArray = Array.from(storeIds);
+  const stores = await pdStoreService.listPdStores({ filters: { id: { $in: storeIdArray } as any } });
+  const storeMap = new Map(stores.map(s => [s.id, s]));
+
+  for (const storeId of storeIdArray) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) continue;
 
       const settings = (store.settings ?? {}) as {
