@@ -1,0 +1,4 @@
+## 2026-05-21 - [Fix DoS Vulnerability in Webhook Signature Verification]
+**Vulnerability:** Node's `crypto.timingSafeEqual` function requires both buffers passed to it to have the exact same length. If they do not, it throws an `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` error. In `pandamarket/backend/src/utils/crypto.ts`'s `verifyWebhookSignature` function, an attacker could supply a signature of a different length than expected, causing an unhandled exception and crashing the node process, resulting in a Denial of Service (DoS) vulnerability.
+**Learning:** Functions that compare signatures should always validate that the buffer lengths are strictly equal before executing `crypto.timingSafeEqual`. This is a common pitfall in webhook verifications or API token matching logic.
+**Prevention:** Always check `bufferA.length === bufferB.length` and handle mismatches gracefully (e.g., returning false) before invoking `crypto.timingSafeEqual`.
