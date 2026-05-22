@@ -30,7 +30,7 @@ interface IPdWalletService {
 }
 
 interface IPdStoreService {
-  listPdStores(args: { filters: { id: string } }): Promise<PdStoreLike[]>;
+  listPdStores(args: { filters: { id: string | { $in: string[] } } }): Promise<PdStoreLike[]>;
 }
 
 interface OrderItemLike {
@@ -100,9 +100,18 @@ export default async function orderPlacedSubscriber({
     return;
   }
 
+  const storeIds = Array.from(storeTotals.keys());
+  let stores: PdStoreLike[] = [];
+  if (storeIds.length > 0) {
+    stores = await pdStoreService.listPdStores({
+      filters: { id: { $in: storeIds } as any },
+    });
+  }
+  const storeMap = new Map<string, PdStoreLike>(stores.map((s) => [s.id, s]));
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) {
         logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
         continue;
