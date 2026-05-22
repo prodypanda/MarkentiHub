@@ -92,6 +92,20 @@ describe('Crypto — Webhook Signatures', () => {
     const isValid = verifyWebhookSignature(tamperedPayload, signature, secret);
     expect(isValid).toBe(false);
   });
+
+  it('should handle invalid signature lengths gracefully (prevent DoS)', () => {
+    const payload = JSON.stringify({ amount: 100 });
+    const secret = 'webhook_secret';
+
+    // Different length signature (e.g., truncated or corrupted)
+    const invalidLengthSignature = 'a1b2c3d4';
+
+    // This should return false and not throw an ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH exception
+    expect(() => {
+      const isValid = verifyWebhookSignature(payload, invalidLengthSignature, secret);
+      expect(isValid).toBe(false);
+    }).not.toThrow();
+  });
 });
 
 describe('Crypto — Utility Functions', () => {
