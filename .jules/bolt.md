@@ -1,0 +1,3 @@
+## 2026-05-13 - MedusaService Bulk Updates (Avoiding N+1)
+**Learning:** In MedusaJS V2, auto-generated CRUD methods from `MedusaService` (like `updateNotifications` or `createNotifications`) natively support bulk operations. You can pass an array of objects to these methods instead of a single object.
+**Action:** When updating or creating multiple records at once, always map the records to an array of objects and pass that array directly to the auto-generated method, rather than iterating over the records and awaiting the method individually inside a `for` loop. This transforms an N+1 query scenario into a single, efficient database operation.
