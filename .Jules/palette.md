@@ -1,0 +1,3 @@
+## 2026-05-23 - Dynamic ARIA Description IDs in Reusable Inputs
+**Learning:** When building accessible, reusable input components that conditionally display error or hint texts, using React's `useId()` is crucial. It prevents `id` collisions and SSR hydration mismatches that occur with custom string replacements. Furthermore, setting `aria-describedby` must strictly check conditions (like `hasError`) so it doesn't point to an element ID that isn't rendered, ensuring screen readers don't read "empty" references.
+**Action:** Always use `useId()` for linking labels and descriptions in reusable UI components. Only populate `aria-describedby` when the target element actually renders.
