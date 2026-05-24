@@ -1,0 +1,3 @@
+## 2024-05-24 - Hydration-Safe ARIA IDs for React Inputs
+**Learning:** React 18+ strict mode and SSR can cause hydration mismatches when generating random IDs or using simple string replacement (like lowercasing labels) for linking labels/inputs/aria-describedby. Furthermore, `aria-describedby` should not point to an empty or non-existent element if an error/hint is absent, as this creates a confusing experience for screen reader users.
+**Action:** Always use the `useId()` hook to generate unique, hydration-safe IDs for components. Conditionally set `aria-describedby` only when the target description element actually renders (e.g. `const describedBy = error ? errorId : hint ? hintId : undefined; aria-describedby={describedBy}`).
