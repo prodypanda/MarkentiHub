@@ -100,9 +100,22 @@ export default async function orderPlacedSubscriber({
     return;
   }
 
+  // ⚡ Bolt: Fix N+1 query by batch fetching all stores
+  const storeIds = Array.from(storeTotals.keys());
+  let allStores: PdStoreLike[] = [];
+  try {
+    allStores = await pdStoreService.listPdStores({
+      filters: { id: { $in: storeIds } as any }
+    });
+  } catch (err) {
+    logger.error({ err, order_id: orderId }, 'Failed to list stores in bulk for wallet credit');
+    return;
+  }
+  const storeMap = new Map(allStores.map(s => [s.id, s]));
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) {
         logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
         continue;
