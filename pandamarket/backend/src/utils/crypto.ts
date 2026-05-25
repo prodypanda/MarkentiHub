@@ -155,11 +155,19 @@ export function verifyWebhookSignature(
   signature: string,
   secret: string,
 ): boolean {
-  const expected = signWebhookPayload(payload, secret);
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expected, 'hex'),
-  );
+  try {
+    const expected = signWebhookPayload(payload, secret);
+    const signatureBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expected, 'hex');
+
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+  } catch (err) {
+    return false;
+  }
 }
 
 /**
