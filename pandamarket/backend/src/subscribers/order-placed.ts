@@ -100,9 +100,25 @@ export default async function orderPlacedSubscriber({
     return;
   }
 
+  // Optimize: Batch fetch all involved stores to prevent N+1 queries.
+  let stores: PdStoreLike[] = [];
+  try {
+    stores = await pdStoreService.listPdStores({
+      filters: { id: Array.from(storeTotals.keys()) as any },
+    });
+  } catch (err) {
+    logger.error({ err, order_id: orderId }, 'Failed to batch fetch stores for wallet credit');
+    return;
+  }
+
+  const storesMap = new Map<string, PdStoreLike>();
+  for (const store of stores) {
+    storesMap.set(store.id, store);
+  }
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storesMap.get(storeId);
       if (!store) {
         logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
         continue;
