@@ -59,9 +59,27 @@ export default async function outgoingWebhooksSubscriber({
     if (meta.store_id) storeIds.add(meta.store_id);
   }
 
+  if (storeIds.size === 0) return;
+
+  // Optimize: Batch fetch all involved stores to prevent N+1 queries.
+  let stores: PdStoreLike[] = [];
+  try {
+    stores = await pdStoreService.listPdStores({
+      filters: { id: Array.from(storeIds) as any },
+    });
+  } catch (err) {
+    logger.error({ err, order_id: data.id }, 'Failed to batch fetch stores for outgoing webhooks');
+    return;
+  }
+
+  const storesMap = new Map<string, PdStoreLike>();
+  for (const store of stores) {
+    storesMap.set(store.id, store);
+  }
+
   for (const storeId of storeIds) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storesMap.get(storeId);
       if (!store) continue;
 
       const settings = (store.settings ?? {}) as {
