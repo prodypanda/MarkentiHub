@@ -1,0 +1,4 @@
+## 2026-05-26 - [Unhandled Exception in Crypto Operations]
+**Vulnerability:** DoS vulnerability in `verifyWebhookSignature` due to unhandled `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` error when `crypto.timingSafeEqual` is called with buffers of different lengths.
+**Learning:** Node.js `crypto.timingSafeEqual` throws an exception if the provided buffers do not have exactly the same length. Unhandled exceptions in Node.js can crash the entire process, creating a Denial of Service (DoS) vector where an attacker can easily crash the server by supplying a webhook signature of a different length than expected.
+**Prevention:** Always compare buffer lengths explicitly (`buf1.length === buf2.length`) before calling `crypto.timingSafeEqual` and handle mismatched lengths gracefully by returning `false` instead of allowing the application to throw an unhandled exception.
