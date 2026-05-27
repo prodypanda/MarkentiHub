@@ -6,13 +6,16 @@
 // landed directly on the vendor's PSP account).
 // =============================================================================
 
-import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
-import { Modules } from '@medusajs/framework/utils';
+import {
+  type SubscriberConfig,
+  type SubscriberArgs,
+} from "@medusajs/framework";
+import { Modules } from "@medusajs/framework/utils";
 
-import { SubscriptionPlan, PLAN_LIMITS, PD_EVENTS } from '../utils/constants';
-import { createServiceLogger } from '../utils/logger';
+import { SubscriptionPlan, PLAN_LIMITS, PD_EVENTS } from "../utils/constants";
+import { createServiceLogger } from "../utils/logger";
 
-const logger = createServiceLogger('OrderPlacedSubscriber');
+const logger = createServiceLogger("OrderPlacedSubscriber");
 
 interface PdStoreLike {
   id: string;
@@ -56,7 +59,7 @@ function isDirectPayment(store: PdStoreLike, plan: SubscriptionPlan): boolean {
   const cfg = store.payment_config ?? {};
   return Boolean(
     (cfg as { flouci?: unknown; konnect?: unknown }).flouci ||
-      (cfg as { flouci?: unknown; konnect?: unknown }).konnect,
+    (cfg as { flouci?: unknown; konnect?: unknown }).konnect,
   );
 }
 
@@ -69,16 +72,20 @@ export default async function orderPlacedSubscriber({
   container,
 }: SubscriberArgs<{ id: string }>): Promise<void> {
   const orderModuleService = container.resolve(Modules.ORDER);
-  const pdWalletService = container.resolve<IPdWalletService>('pdWalletService');
-  const pdStoreService = container.resolve<IPdStoreService>('pdStoreService');
+  const pdWalletService =
+    container.resolve<IPdWalletService>("pdWalletService");
+  const pdStoreService = container.resolve<IPdStoreService>("pdStoreService");
 
   const orderId = data.id;
   const order = (await orderModuleService.retrieveOrder(orderId, {
-    relations: ['items', 'payment_collections'],
+    relations: ["items", "payment_collections"],
   })) as OrderLike | null;
 
   if (!order || !order.items || order.items.length === 0) {
-    logger.debug({ order_id: orderId }, 'Order not found or has no items; skipping');
+    logger.debug(
+      { order_id: orderId },
+      "Order not found or has no items; skipping",
+    );
     return;
   }
 
@@ -95,35 +102,60 @@ export default async function orderPlacedSubscriber({
   if (storeTotals.size === 0) {
     logger.warn(
       { order_id: orderId },
-      'Order placed but no items carried a store_id in metadata; wallet not credited',
+      "Order placed but no items carried a store_id in metadata; wallet not credited",
     );
     return;
   }
 
+  // Batch fetch all stores to prevent N+1 queries
+  let fetchedStores: PdStoreLike[] = [];
+  try {
+    fetchedStores = await pdStoreService.listPdStores({
+      filters: { id: Array.from(storeTotals.keys()) as any },
+    });
+  } catch (err) {
+    logger.error(
+      { err, order_id: orderId },
+      "Failed to batch fetch stores for order placed subscriber",
+    );
+  }
+  const storeMap = new Map(fetchedStores.map((s) => [s.id, s]));
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) {
-        logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
+        logger.warn(
+          { order_id: orderId, store_id: storeId },
+          "Store not found for order item",
+        );
         continue;
       }
 
       const plan = resolvePlan(store);
       if (!plan) {
-        logger.error({ order_id: orderId, store_id: storeId }, 'Store has no valid subscription plan');
+        logger.error(
+          { order_id: orderId, store_id: storeId },
+          "Store has no valid subscription plan",
+        );
         continue;
       }
 
       if (isDirectPayment(store, plan)) {
         logger.info(
           { order_id: orderId, store_id: storeId, amount: grossAmount },
-          'Direct-pay plan — wallet credit skipped (funds sent directly to vendor PSP)',
+          "Direct-pay plan — wallet credit skipped (funds sent directly to vendor PSP)",
         );
         continue;
       }
 
       const commissionRate = commissionRateFor(plan);
-      await pdWalletService.creditSale(storeId, grossAmount, commissionRate, orderId);
+      await pdWalletService.creditSale(
+        storeId,
+        grossAmount,
+        commissionRate,
+        orderId,
+      );
 
       logger.info(
         {
@@ -133,17 +165,17 @@ export default async function orderPlacedSubscriber({
           commission_rate: commissionRate,
           event: PD_EVENTS.ORDER_PLACED,
         },
-        'Wallet credited for order',
+        "Wallet credited for order",
       );
     } catch (err) {
       logger.error(
         { err, order_id: orderId, store_id: storeId },
-        'Failed to credit wallet for order item',
+        "Failed to credit wallet for order item",
       );
     }
   }
 }
 
 export const config: SubscriberConfig = {
-  event: ['order.placed'],
+  event: ["order.placed"],
 };
