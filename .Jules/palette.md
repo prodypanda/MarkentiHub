@@ -1,0 +1,3 @@
+## 2024-05-28 - Image Uploader Accessibility Enhancements
+**Learning:** Custom interactive elements (like the upload trigger `div` in ImageUploader) lack native keyboard accessibility. They must include `role="button"`, `tabIndex`, and `onKeyDown` handlers (listening for "Enter" or "Space") to be fully accessible. Additionally, icon-only buttons (like the remove image button) must have an explicit `aria-label`.
+**Action:** Always verify that `div` or `span` elements used as buttons include ARIA roles and keyboard event handlers. Ensure all icon-only buttons have descriptive `aria-label` attributes.
