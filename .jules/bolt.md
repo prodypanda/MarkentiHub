@@ -1,0 +1,3 @@
+## 2026-05-28 - Batched Array Map Lookups for N+1 Queries
+**Learning:** MedusaJS `listPdStores` (and other generated list methods) accept an array of IDs in `filters: { id: [...] }` to perform implicit `$in` queries. However, due to strict generic type constraints on the filters object, the array might need to be cast `as any` to bypass TypeScript errors (e.g., `filters: { id: Array.from(storeIds) as any }`).
+**Action:** Always refactor iterative queries inside loops to pre-fetch bulk data using array `$in` filters, mapping the result to a `Map` structure for `O(1)` local lookup, effectively turning N+1 database operations into an optimized 2-step process.
