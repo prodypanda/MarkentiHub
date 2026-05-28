@@ -5,13 +5,16 @@
 // webhook URL. Never throws — failures are logged and surface as retry jobs.
 // =============================================================================
 
-import { type SubscriberConfig, type SubscriberArgs } from '@medusajs/framework';
-import { Modules } from '@medusajs/framework/utils';
+import {
+  type SubscriberConfig,
+  type SubscriberArgs,
+} from "@medusajs/framework";
+import { Modules } from "@medusajs/framework/utils";
 
-import { signWebhookPayload } from '../utils/crypto';
-import { createServiceLogger } from '../utils/logger';
+import { signWebhookPayload } from "../utils/crypto";
+import { createServiceLogger } from "../utils/logger";
 
-const logger = createServiceLogger('OutgoingWebhooksSubscriber');
+const logger = createServiceLogger("OutgoingWebhooksSubscriber");
 
 interface OrderItemLike {
   metadata?: Record<string, unknown> | null;
@@ -32,23 +35,33 @@ interface IPdStoreService {
 }
 
 interface IOrderModuleService {
-  retrieveOrder(id: string, opts?: Record<string, unknown>): Promise<OrderLike | null>;
+  retrieveOrder(
+    id: string,
+    opts?: Record<string, unknown>,
+  ): Promise<OrderLike | null>;
 }
 
 export default async function outgoingWebhooksSubscriber({
   event: { data, name },
   container,
 }: SubscriberArgs<{ id: string }>): Promise<void> {
-  if (name !== 'order.placed') return;
+  if (name !== "order.placed") return;
 
-  const orderModuleService = container.resolve(Modules.ORDER) as unknown as IOrderModuleService;
-  const pdStoreService = container.resolve<IPdStoreService>('pdStoreService');
+  const orderModuleService = container.resolve(
+    Modules.ORDER,
+  ) as unknown as IOrderModuleService;
+  const pdStoreService = container.resolve<IPdStoreService>("pdStoreService");
 
   let order: OrderLike | null;
   try {
-    order = await orderModuleService.retrieveOrder(data.id, { relations: ['items'] });
+    order = await orderModuleService.retrieveOrder(data.id, {
+      relations: ["items"],
+    });
   } catch (err) {
-    logger.error({ err, order_id: data.id }, 'Failed to retrieve order for webhook dispatch');
+    logger.error(
+      { err, order_id: data.id },
+      "Failed to retrieve order for webhook dispatch",
+    );
     return;
   }
   if (!order) return;
@@ -59,9 +72,27 @@ export default async function outgoingWebhooksSubscriber({
     if (meta.store_id) storeIds.add(meta.store_id);
   }
 
+  if (storeIds.size === 0) return;
+
+  // Pre-fetch all stores in a single query to avoid N+1 N-queries
+  const storeMap = new Map<string, PdStoreLike>();
+  try {
+    const stores = await pdStoreService.listPdStores({
+      filters: { id: Array.from(storeIds) as any },
+    });
+    for (const s of stores) {
+      storeMap.set(s.id, s);
+    }
+  } catch (err) {
+    logger.error(
+      { err, order_id: order.id },
+      "Failed to pre-fetch stores for outgoing webhooks",
+    );
+  }
+
   for (const storeId of storeIds) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) continue;
 
       const settings = (store.settings ?? {}) as {
@@ -72,38 +103,50 @@ export default async function outgoingWebhooksSubscriber({
       if (!settings.webhook_url) continue;
 
       const payload = {
-        event: 'pd.order.placed',
+        event: "pd.order.placed",
         data: order,
         timestamp: new Date().toISOString(),
       };
       const payloadString = JSON.stringify(payload);
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
 
       if (settings.webhook_secret) {
-        headers['X-PD-Signature'] = signWebhookPayload(payloadString, settings.webhook_secret);
+        headers["X-PD-Signature"] = signWebhookPayload(
+          payloadString,
+          settings.webhook_secret,
+        );
       }
 
       try {
         const response = await fetch(settings.webhook_url, {
-          method: 'POST',
+          method: "POST",
           headers,
           body: payloadString,
         });
         if (!response.ok) {
           logger.warn(
-            { store_id: storeId, status: response.status, url: settings.webhook_url },
-            'Vendor webhook returned non-2xx',
+            {
+              store_id: storeId,
+              status: response.status,
+              url: settings.webhook_url,
+            },
+            "Vendor webhook returned non-2xx",
           );
         }
       } catch (err) {
-        logger.warn({ err, store_id: storeId }, 'Vendor webhook dispatch failed');
+        logger.warn(
+          { err, store_id: storeId },
+          "Vendor webhook dispatch failed",
+        );
       }
     } catch (err) {
-      logger.error({ err, store_id: storeId }, 'Webhook loop iteration failed');
+      logger.error({ err, store_id: storeId }, "Webhook loop iteration failed");
     }
   }
 }
 
 export const config: SubscriberConfig = {
-  event: ['order.placed'],
+  event: ["order.placed"],
 };
