@@ -1,0 +1,3 @@
+## 2026-05-30 - MedusaJS Batched Fetch for Generic ID Filters
+**Learning:** In MedusaJS, passing arrays directly for generic ID filters works as an implicit `$in` operator to resolve N+1 database queries. However, because of strict generic type constraints, you need to cast the array `as any` (e.g., `{ filters: { id: Array.from(storeIds) as any } }`) to bypass the TypeScript error.
+**Action:** When working in backend services and subscribers that fetch resources inside a loop (like `pdStoreService.listPdStores`), batch the fetch before the loop by grouping IDs, passing the array casted `as any` to the generic filter, and mapping the results for O(1) lookups to optimize performance and prevent N+1 queries.
