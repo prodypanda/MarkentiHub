@@ -100,9 +100,20 @@ export default async function orderPlacedSubscriber({
     return;
   }
 
+  // ⚡ Bolt Optimization: Batch fetch stores to avoid N+1 queries
+  // MedusaJS generic ID filters support arrays for bulk lookups when casted to any.
+  let stores: PdStoreLike[] = [];
+  try {
+    stores = await pdStoreService.listPdStores({ filters: { id: Array.from(storeTotals.keys()) as any } });
+  } catch (err) {
+    logger.error({ err, order_id: orderId }, 'Failed to batch fetch stores for wallet credit');
+    return;
+  }
+  const storeMap = new Map<string, PdStoreLike>(stores.map((s) => [s.id, s]));
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storeMap.get(storeId);
       if (!store) {
         logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
         continue;
