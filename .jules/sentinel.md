@@ -1,0 +1,4 @@
+## 2026-05-14 - [timingSafeEqual Length Exception DoS]
+**Vulnerability:** The `crypto.timingSafeEqual` method throws a TypeError if the two buffers being compared are not of equal length, which can lead to application crashes (DoS) if triggered by an attacker providing a signature of unexpected length. This was found in `verifyWebhookSignature` in `pandamarket/backend/src/utils/crypto.ts`.
+**Learning:** In Node.js, `timingSafeEqual` assumes equal length buffers. The caller is responsible for ensuring length parity before invoking it.
+**Prevention:** Always compare the `.length` of the two buffers before calling `crypto.timingSafeEqual`, returning `false` early if they differ. The length of a hash is not considered a secret, so this early return does not introduce a problematic timing attack vulnerability.
