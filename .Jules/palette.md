@@ -1,0 +1,3 @@
+## 2024-05-13 - Hydration-safe accessible form fields
+**Learning:** In Next.js/React 18 components, generating element IDs using string manipulation (like `label.toLowerCase()`) can cause hydration mismatches between server and client if the component structure is rendered dynamically or multiple instances are used without explicit `id` props. Furthermore, linking errors/hints to screen readers using `aria-describedby` requires ensuring the referenced IDs actually exist in the DOM, otherwise screen readers may announce empty descriptions.
+**Action:** Always use the `useId()` hook to generate unique fallback IDs for interactive elements. Conditionally apply `aria-describedby` only when the associated error or hint text is actively rendered.
