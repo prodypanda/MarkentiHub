@@ -1,5 +1,5 @@
 'use client';
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,7 +10,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, icon, style, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const inputId = id || generatedId;
+    const errorId = error ? `${inputId}-error` : undefined;
+    const hintId = hint && !error ? `${inputId}-hint` : undefined;
     const hasError = Boolean(error);
 
     const containerStyle: React.CSSProperties = {
@@ -50,6 +53,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {icon && <span style={iconStyle}>{icon}</span>}
           <input
             ref={ref} id={inputId} style={inputStyle}
+            aria-invalid={hasError ? "true" : undefined}
+            aria-describedby={errorId || hintId}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = hasError ? 'var(--pd-red)' : 'var(--pd-green)';
               e.currentTarget.style.boxShadow = hasError
@@ -63,8 +68,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
         </div>
-        {error && <span style={{ fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-red)' }}>{error}</span>}
-        {hint && !error && <span style={{ fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-text-tertiary)' }}>{hint}</span>}
+        {error && <span id={errorId} style={{ fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-red)' }}>{error}</span>}
+        {hint && !error && <span id={hintId} style={{ fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-text-tertiary)' }}>{hint}</span>}
       </div>
     );
   },
