@@ -100,9 +100,16 @@ export default async function orderPlacedSubscriber({
     return;
   }
 
+  // ⚡ Bolt: Fetch all relevant stores in a single query to eliminate N+1 database calls
+  const storeIdsToFetch = Array.from(storeTotals.keys());
+  const stores = await pdStoreService.listPdStores({
+    filters: { id: storeIdsToFetch as any },
+  });
+  const storesMap = new Map(stores.map((s) => [s.id, s]));
+
   for (const [storeId, grossAmount] of storeTotals) {
     try {
-      const [store] = await pdStoreService.listPdStores({ filters: { id: storeId } });
+      const store = storesMap.get(storeId);
       if (!store) {
         logger.warn({ order_id: orderId, store_id: storeId }, 'Store not found for order item');
         continue;

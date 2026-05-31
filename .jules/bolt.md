@@ -1,0 +1,3 @@
+## 2026-05-31 - [Optimize database queries in Order Subscribers]
+**Learning:** In MedusaJS, passing arrays directly for generic ID filters works as an implicit `$in` operator, which helps to avoid N+1 database queries when querying entities inside a loop. However, you may need to cast the array `as any` to bypass strict generic type constraints (e.g., `{ filters: { id: Array.from(storeIds) as any } }`).
+**Action:** When working with Medusa services, always inspect loops making database queries. Instead of querying individually, aggregate IDs and perform a single batched array query, mapping the results into a JavaScript `Map` for quick `O(1)` retrieval inside the loop.
