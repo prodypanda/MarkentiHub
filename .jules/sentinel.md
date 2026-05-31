@@ -1,0 +1,4 @@
+## 2026-06-01 - Prevent `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` in `crypto.timingSafeEqual`
+**Vulnerability:** In `backend/src/utils/crypto.ts`, `verifyWebhookSignature` passes the given signature directly into `crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'))`. If an attacker passes a `signature` with a different hex byte length than the expected signature (which is 64 hex chars -> 32 bytes), Node.js throws an unhandled `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` error, causing the Node process to crash (Denial of Service - DoS).
+**Learning:** `crypto.timingSafeEqual` strictly requires both Buffer parameters to have the exact same byte length. If they differ, it synchronously throws an error rather than returning `false`, violating "fail securely".
+**Prevention:** Always verify that the lengths of the two buffers match using `if (bufA.length !== bufB.length) return false;` *before* calling `crypto.timingSafeEqual`.
