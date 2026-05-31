@@ -1,0 +1,3 @@
+## 2024-05-31 - [Empty States & A11y]
+**Learning:** In the PandaMarket frontend, using standard icons for empty states (e.g., `Package` for no products, `Search` for no search results) significantly improves user understanding compared to plain text messages. The empty states should also provide clear next steps with Call To Action buttons (e.g., "Add Product"). Furthermore, ensuring icon-only interactive elements like action buttons have `aria-label` and `title` attributes is a must for accessibility and tooltips.
+**Action:** Consistently use relevant icons, descriptive messages, and actionable CTAs for empty states. Always include `aria-label` and `title` for icon-only buttons.
