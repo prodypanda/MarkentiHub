@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Plus, Search, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, Loader2, Package } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -49,6 +49,7 @@ export default function ProductsPage() {
         <input
           value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Rechercher un produit..."
+          aria-label="Rechercher un produit"
           style={{
             width: '100%', padding: '10px 14px 10px 40px', borderRadius: 'var(--pd-radius-md)',
             border: '1px solid var(--pd-border)', backgroundColor: 'var(--pd-bg-secondary)',
@@ -66,9 +67,20 @@ export default function ProductsPage() {
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--pd-red)' }}>
             Erreur lors du chargement des produits
           </div>
+        ) : products.length === 0 ? (
+          <div style={{ padding: 64, textAlign: 'center', color: 'var(--pd-text-secondary)' }}>
+            <Package size={48} style={{ color: 'var(--pd-border)', margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: 'var(--pd-fs-xl)', fontWeight: 700, marginBottom: 8, color: 'var(--pd-text-primary)' }}>Aucun produit</h3>
+            <p style={{ marginBottom: 24 }}>Vous n'avez pas encore ajouté de produits à votre boutique.</p>
+            <Link href="/dashboard/products/new">
+              <Button icon={<Plus size={18} />}>Ajouter mon premier produit</Button>
+            </Link>
+          </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--pd-text-secondary)' }}>
-            Aucun produit trouvé.
+          <div style={{ padding: 64, textAlign: 'center', color: 'var(--pd-text-secondary)' }}>
+            <Search size={48} style={{ color: 'var(--pd-border)', margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: 'var(--pd-fs-xl)', fontWeight: 700, marginBottom: 8, color: 'var(--pd-text-primary)' }}>Aucun résultat</h3>
+            <p>Aucun produit ne correspond à "{search}".</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -112,9 +124,9 @@ export default function ProductsPage() {
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <Link href={`/dashboard/products/${p.id}/edit`}>
-                          <button style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-text-secondary)', cursor: 'pointer' }} className="hover-lift"><Edit size={16} /></button>
+                          <button aria-label="Modifier le produit" title="Modifier le produit" style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-text-secondary)', cursor: 'pointer' }} className="hover-lift"><Edit size={16} /></button>
                         </Link>
-                        <button style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-red)', cursor: 'pointer' }} className="hover-lift"><Trash2 size={16} /></button>
+                        <button aria-label="Supprimer le produit" title="Supprimer le produit" style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-red)', cursor: 'pointer' }} className="hover-lift"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
