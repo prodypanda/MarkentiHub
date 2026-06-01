@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Plus, Search, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
@@ -27,7 +27,13 @@ export default function ProductsPage() {
   );
 
   const products = (data as any)?.products || [];
-  const filtered = products.filter((p: any) => p.title.toLowerCase().includes(search.toLowerCase()));
+
+  // ⚡ Bolt Optimization: Memoize the filtered array to prevent recalculating on every render.
+  // We also hoist `search.toLowerCase()` outside the loop to avoid redundant string allocations.
+  const filtered = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return products.filter((p: any) => p.title.toLowerCase().includes(searchLower));
+  }, [products, search]);
 
   return (
     <div className="animate-fade-in">

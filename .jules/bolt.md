@@ -1,0 +1,3 @@
+## 2026-06-01 - Memoizing and hoisting array filters in dashboard lists
+**Learning:** In React components that render lists with client-side filtering (like dashboard tables), calculating `search.toLowerCase()` inside the `.filter()` callback causes a new string allocation for every single item in the list on every render.
+**Action:** Always hoist `search.toLowerCase()` outside the `.filter()` loop, and wrap the entire filtering logic in a `useMemo` hook with dependencies on the raw data and filter states to prevent redundant calculations and allocations on re-renders (e.g., when other state changes or SWR revalidates).
