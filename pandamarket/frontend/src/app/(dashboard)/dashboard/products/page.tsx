@@ -27,7 +27,14 @@ export default function ProductsPage() {
   );
 
   const products = (data as any)?.products || [];
-  const filtered = products.filter((p: any) => p.title.toLowerCase().includes(search.toLowerCase()));
+
+  // ⚡ Bolt: Optimize filtering by memoizing and hoisting invariant operations outside the loop
+  const filtered = React.useMemo(() => {
+    if (!search) return products;
+
+    const lowerSearch = search.toLowerCase();
+    return products.filter((p: any) => p.title.toLowerCase().includes(lowerSearch));
+  }, [products, search]);
 
   return (
     <div className="animate-fade-in">

@@ -1,0 +1,3 @@
+## 2026-06-02 - Hoisting array operations and React.useMemo
+**Learning:** Wrapped frequently run `.filter` operations over large lists (e.g. `orders`, `products`) in `React.useMemo` to prevent unneeded recalculations when other UI states change. Furthermore, operations like `search.toLowerCase()` or static comparisons like `filter === 'all'` were executed on every item of the loop.
+**Action:** Always hoist invariant string allocations and calculations outside `.filter` or `.map` loops, especially in React dashboard views, and wrap the list calculations in `useMemo` so that they only recalculate when their dependencies change.

@@ -38,12 +38,24 @@ export default function OrdersPage() {
 
   const rawOrders = (data as any)?.orders || orders; // Fallback to static mock for display if api fails
 
-  const filtered = rawOrders.filter((o: any) => {
-    const matchSearch = String(o.id).toLowerCase().includes(search.toLowerCase()) || 
-      (o.customer || o.email || '').toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || o.status === filter;
-    return matchSearch && matchFilter;
-  });
+  // ⚡ Bolt: Optimize filtering by memoizing and hoisting invariant operations outside the loop
+  const filtered = React.useMemo(() => {
+    const isAll = filter === 'all';
+
+    if (!search) {
+      return rawOrders.filter((o: any) => isAll || o.status === filter);
+    }
+
+    const lowerSearch = search.toLowerCase();
+    return rawOrders.filter((o: any) => {
+      const matchFilter = isAll || o.status === filter;
+      if (!matchFilter) return false;
+
+      const matchSearch = String(o.id).toLowerCase().includes(lowerSearch) ||
+        (o.customer || o.email || '').toLowerCase().includes(lowerSearch);
+      return matchSearch;
+    });
+  }, [rawOrders, search, filter]);
 
   return (
     <div className="animate-fade-in">
