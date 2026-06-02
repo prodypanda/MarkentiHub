@@ -1,0 +1,3 @@
+## 2026-06-02 - UI Components Accessibility Enhancement
+**Learning:** Found an accessibility issue pattern specific to this app's components, where core UI components (`Button`, `Input`, `Modal`) lacked essential ARIA attributes (like `aria-label`, `aria-describedby`, `aria-invalid`, `aria-modal`) to communicate state and context to screen readers, and modals lacked keyboard focus management.
+**Action:** Always add proper ARIA attributes to UI primitives, particularly generating unique IDs using `React.useId` for inputs to safely link errors/hints via `aria-describedby`, ensuring `aria-label` logic properly falls back for icon-only buttons, and enforcing initial focus in generic components like `Modal`.
