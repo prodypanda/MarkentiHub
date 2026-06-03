@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Plus, Search, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
@@ -16,6 +16,7 @@ const statusBadge: Record<string, { label: string; variant: 'success' | 'warning
 
 const MOCK_STORE_ID = 'store_123'; // To be replaced with auth session
 const MOCK_MAX_PRODUCTS = 10; // To be replaced with plan fetch
+const EMPTY_PRODUCTS: any[] = [];
 
 export default function ProductsPage() {
   const [search, setSearch] = useState('');
@@ -26,8 +27,11 @@ export default function ProductsPage() {
     api.get
   );
 
-  const products = (data as any)?.products || [];
-  const filtered = products.filter((p: any) => p.title.toLowerCase().includes(search.toLowerCase()));
+  const products = (data as any)?.products || EMPTY_PRODUCTS;
+  const filtered = useMemo(() => {
+    const lowerSearch = search.toLowerCase();
+    return products.filter((p: any) => p.title.toLowerCase().includes(lowerSearch));
+  }, [products, search]);
 
   return (
     <div className="animate-fade-in">
