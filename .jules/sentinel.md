@@ -1,0 +1,4 @@
+## 2026-05-13 - Node.js crypto.timingSafeEqual DoS Vulnerability
+**Vulnerability:** The `verifyWebhookSignature` function in `pandamarket/backend/src/utils/crypto.ts` passed externally provided payload signatures directly to `crypto.timingSafeEqual` against expected hashes without validating lengths. If an attacker sent a signature with a mismatched byte length, Node.js would throw an `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` exception, which crashes the process, leading to a Denial of Service (DoS).
+**Learning:** `crypto.timingSafeEqual` is strictly designed to mitigate timing attacks by comparing buffers of identical lengths in constant time. It deliberately throws when lengths mismatch rather than returning false, enforcing length verification prior to comparison.
+**Prevention:** Always extract external cryptographic strings into Buffers and explicitly verify that `bufferA.length === bufferB.length` before invoking `crypto.timingSafeEqual`.
