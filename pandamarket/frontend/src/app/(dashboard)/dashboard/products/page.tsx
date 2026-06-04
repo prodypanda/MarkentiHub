@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Plus, Search, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
@@ -27,7 +27,13 @@ export default function ProductsPage() {
   );
 
   const products = (data as any)?.products || [];
-  const filtered = products.filter((p: any) => p.title.toLowerCase().includes(search.toLowerCase()));
+
+  // ⚡ Bolt: Wrap filtering in useMemo and hoist toLowerCase() outside the loop
+  // to avoid redundant string allocations on every re-render.
+  const filtered = useMemo(() => {
+    const lowerSearch = search.toLowerCase();
+    return products.filter((p: any) => p.title.toLowerCase().includes(lowerSearch));
+  }, [products, search]);
 
   return (
     <div className="animate-fade-in">
