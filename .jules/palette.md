@@ -1,0 +1,3 @@
+## 2026-05-13 - [ImageUploader Keyboard Accessibility]
+**Learning:** Icon-only remove buttons often miss ARIA labels, and custom `div` implementations for trigger buttons (like file uploaders) frequently lack `role="button"`, `tabIndex`, and keyboard event handlers. This pattern creates significant barriers for screen reader and keyboard-only users.
+**Action:** Always verify that custom interactive elements (`div` or `span` used as buttons) have `role="button"`, proper `tabIndex`, and `onKeyDown` handlers for Enter and Space keys. Ensure all icon-only action buttons have descriptive `aria-label` and `title` attributes.
