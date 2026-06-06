@@ -1,0 +1,3 @@
+## 2026-05-13 - Improved Input Component Accessibility
+**Learning:** Shared UI components like `Input` often rely on string manipulation (like replacing spaces in labels) for HTML `id` generation, which can cause ID collisions and hydration mismatches. Additionally, `aria-describedby` is frequently omitted, meaning screen readers miss critical context like hints or validation errors.
+**Action:** When building or refactoring shared input elements, always use React's `useId()` for robust ID generation. Always link helper text and error messages to the input using `aria-describedby`, ensuring the IDs are only included in the array if the corresponding element actually renders to avoid orphaned ARIA references.
