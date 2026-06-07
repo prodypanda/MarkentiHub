@@ -1,0 +1,4 @@
+## 2025-06-07 - verifyWebhookSignature Buffer Length DoS fix
+**Vulnerability:** Node's `crypto.timingSafeEqual` function throws an unhandled exception `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` when provided with buffers of different lengths. An attacker could exploit this by providing a webhook signature string of an incorrect length, crashing the worker or server and causing a Denial of Service (DoS).
+**Learning:** `crypto.timingSafeEqual` is strictly designed to compare buffers of the identical byte length. It assumes you have already validated that lengths match before comparing the contents to prevent timing attacks based on early termination of strings of differing lengths.
+**Prevention:** Always verify that `Buffer.from(input).length === Buffer.from(expected).length` before passing them to `crypto.timingSafeEqual`.
