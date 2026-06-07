@@ -1,0 +1,3 @@
+## 2026-06-07 - React useId vs regex ID Generation Pattern
+**Learning:** Using regex replacements on string labels to generate component IDs creates fragile references that fail with duplicate labels and causes hydration mismatches during Server-Side Rendering (SSR). This also breaks critical accessibility links like `aria-describedby` when errors/hints refer to the wrong generated IDs.
+**Action:** Always use React 18's `useId()` hook to generate unique, stable, SSR-safe identifiers for inputs, labels, and aria-describedby references rather than relying on manual text transformations or Math.random(). Apply `aria-invalid` to structurally hint at validation states, and use `role="alert"` for real-time error announcements.
