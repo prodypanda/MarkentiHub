@@ -92,6 +92,19 @@ describe('Crypto — Webhook Signatures', () => {
     const isValid = verifyWebhookSignature(tamperedPayload, signature, secret);
     expect(isValid).toBe(false);
   });
+
+  it('should safely reject signatures of incorrect length without throwing', () => {
+    const payload = JSON.stringify({ amount: 100 });
+    const secret = 'webhook_secret';
+
+    // A signature that's valid hex but the wrong length
+    const shortSignature = 'deadbeef';
+
+    // This would throw ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH without length validation
+    const isValid = verifyWebhookSignature(payload, shortSignature, secret);
+
+    expect(isValid).toBe(false);
+  });
 });
 
 describe('Crypto — Utility Functions', () => {
