@@ -1,0 +1,3 @@
+## 2026-06-08 - Accessible and Hydration-Safe Form Inputs
+**Learning:** Using `label?.toLowerCase().replace(/\s+/g, '-')` to generate IDs for form inputs can cause SSR hydration mismatches in Next.js 18 if the label is dynamic or translated, and using simple strings for `id` might conflict if multiple inputs have the same label. Additionally, screen readers need explicit linkage (`aria-describedby`) to associate hint and error text elements with the input field.
+**Action:** Always use the `useId()` hook in React components to generate robust, unique IDs for forms and input elements. Dynamically render `aria-describedby` only when the associated `id` and element exist to ensure screen readers read the error or hint text efficiently.
