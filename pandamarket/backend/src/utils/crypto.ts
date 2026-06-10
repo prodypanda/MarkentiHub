@@ -156,9 +156,20 @@ export function verifyWebhookSignature(
   secret: string,
 ): boolean {
   const expected = signWebhookPayload(payload, secret);
+
+  // Convert hex strings to Buffers
+  const signatureBuffer = Buffer.from(signature, 'hex');
+  const expectedBuffer = Buffer.from(expected, 'hex');
+
+  // crypto.timingSafeEqual throws ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH if buffer lengths do not match.
+  // We must verify the lengths match before comparing to prevent DoS via unhandled exceptions.
+  if (signatureBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
   return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expected, 'hex'),
+    signatureBuffer,
+    expectedBuffer,
   );
 }
 
