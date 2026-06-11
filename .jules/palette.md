@@ -1,0 +1,3 @@
+## 2026-06-11 - Input Field Accessibility and Hydration Pattern
+**Learning:** Using manual string manipulation (`replace`) for generating input element IDs based on labels can lead to Server-Side Rendering (SSR) hydration mismatches in React 18 / Next.js.
+**Action:** Always use React's `useId()` hook to generate unique IDs for form elements to ensure consistency between server and client. When implementing reusable form components with validation (error) and helper text (hint), conditionally generate corresponding IDs and link them to the input field using `aria-describedby` only if those elements are rendered. Apply `aria-invalid="true"` when an error state is active.
