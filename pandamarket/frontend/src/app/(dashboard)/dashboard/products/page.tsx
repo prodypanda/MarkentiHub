@@ -112,9 +112,9 @@ export default function ProductsPage() {
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <Link href={`/dashboard/products/${p.id}/edit`}>
-                          <button style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-text-secondary)', cursor: 'pointer' }} className="hover-lift"><Edit size={16} /></button>
+                          <button aria-label="Modifier le produit" title="Modifier le produit" style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-text-secondary)', cursor: 'pointer' }} className="hover-lift"><Edit size={16} /></button>
                         </Link>
-                        <button style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-red)', cursor: 'pointer' }} className="hover-lift"><Trash2 size={16} /></button>
+                        <button aria-label="Supprimer le produit" title="Supprimer le produit" style={{ width: 32, height: 32, borderRadius: 'var(--pd-radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pd-red)', cursor: 'pointer' }} className="hover-lift"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>

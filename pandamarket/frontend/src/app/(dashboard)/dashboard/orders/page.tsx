@@ -104,7 +104,7 @@ export default function OrdersPage() {
                     <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)' }}>{paymentBadge[o.payment] || o.payment}</td>
                     <td style={{ padding: '14px 16px' }}><Badge variant={statusMap[o.status]?.variant || 'neutral'} dot>{statusMap[o.status]?.label || o.status}</Badge></td>
                     <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-text-tertiary)' }}>{o.date || new Date().toLocaleDateString('fr-FR')}</td>
-                    <td style={{ padding: '14px 16px' }}><button style={{ color: 'var(--pd-text-secondary)', cursor: 'pointer', border: 'none', background: 'none' }} className="hover-lift"><Eye size={16} /></button></td>
+                    <td style={{ padding: '14px 16px' }}><button aria-label="Voir la commande" title="Voir la commande" style={{ color: 'var(--pd-text-secondary)', cursor: 'pointer', border: 'none', background: 'none' }} className="hover-lift"><Eye size={16} /></button></td>
                   </tr>
                 ))}
               </tbody>

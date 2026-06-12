@@ -76,7 +76,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <Link href="/dashboard/products">
-            <button style={{ 
+            <button aria-label="Retour à la liste des produits" title="Retour" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 40, height: 40, borderRadius: 'var(--pd-radius-md)',
               border: '1px solid var(--pd-border)', backgroundColor: 'var(--pd-bg-primary)',
