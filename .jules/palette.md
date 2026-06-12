@@ -1,0 +1,3 @@
+## 2026-05-14 - Icon-only buttons accessibility pattern
+**Learning:** In the PandaMarket frontend (specifically the dashboard tables), several inline action buttons (Edit, Delete, View, Back, Collapse) are implemented using plain `<button>` elements with `lucide-react` icons inside, lacking `aria-label` and `title` attributes. This breaks screen-reader accessibility and hinders mouse users without tooltips.
+**Action:** When adding inline action buttons with icons, always ensure that `aria-label` is set for screen readers and `title` is set for native tooltips, particularly in dense table rows where `Button` component wrappers might not be used.

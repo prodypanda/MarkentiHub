@@ -50,7 +50,7 @@ export default function NewProductPage() {
     <div className="animate-fade-in">
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
         <Link href="/dashboard/products">
-          <button style={{ 
+          <button aria-label="Retour à la liste des produits" title="Retour" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 40, height: 40, borderRadius: 'var(--pd-radius-md)',
             border: '1px solid var(--pd-border)', backgroundColor: 'var(--pd-bg-primary)',

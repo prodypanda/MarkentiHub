@@ -108,6 +108,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{ padding: '12px 8px', borderTop: '1px solid var(--pd-border)' }}>
           <button
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Développer le menu" : "Réduire le menu"}
+            title={collapsed ? "Développer le menu" : "Réduire le menu"}
             style={{
               width: '100%', padding: '8px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
