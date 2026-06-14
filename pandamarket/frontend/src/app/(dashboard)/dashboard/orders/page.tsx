@@ -1,110 +1,333 @@
 // pandamarket/frontend/src/app/(dashboard)/dashboard/orders/page.tsx
-'use client';
-import React, { useState } from 'react';
-import useSWR from 'swr';
-import { Search, Filter, Eye, Loader2 } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
-import { api } from '@/lib/api';
+"use client";
+import React, { useState, useMemo } from "react";
+import useSWR from "swr";
+import { Search, Filter, Eye, Loader2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import { api } from "@/lib/api";
 
 const orders = [
-  { id: 'PD-1234', customer: 'Ahmed B.', email: 'ahmed@test.tn', items: 2, total: '85.000', status: 'pending', payment: 'flouci', date: '2 mai 2026' },
-  { id: 'PD-1233', customer: 'Salma K.', email: 'salma@test.tn', items: 1, total: '42.500', status: 'processing', payment: 'konnect', date: '1 mai 2026' },
-  { id: 'PD-1232', customer: 'Mohamed A.', email: 'mohamed@test.tn', items: 3, total: '120.000', status: 'fulfilled', payment: 'cod', date: '30 avr 2026' },
-  { id: 'PD-1231', customer: 'Nour H.', email: 'nour@test.tn', items: 1, total: '67.300', status: 'delivered', payment: 'mandat', date: '28 avr 2026' },
-  { id: 'PD-1230', customer: 'Youssef M.', email: 'youssef@test.tn', items: 2, total: '155.000', status: 'cancelled', payment: 'flouci', date: '25 avr 2026' },
+  {
+    id: "PD-1234",
+    customer: "Ahmed B.",
+    email: "ahmed@test.tn",
+    items: 2,
+    total: "85.000",
+    status: "pending",
+    payment: "flouci",
+    date: "2 mai 2026",
+  },
+  {
+    id: "PD-1233",
+    customer: "Salma K.",
+    email: "salma@test.tn",
+    items: 1,
+    total: "42.500",
+    status: "processing",
+    payment: "konnect",
+    date: "1 mai 2026",
+  },
+  {
+    id: "PD-1232",
+    customer: "Mohamed A.",
+    email: "mohamed@test.tn",
+    items: 3,
+    total: "120.000",
+    status: "fulfilled",
+    payment: "cod",
+    date: "30 avr 2026",
+  },
+  {
+    id: "PD-1231",
+    customer: "Nour H.",
+    email: "nour@test.tn",
+    items: 1,
+    total: "67.300",
+    status: "delivered",
+    payment: "mandat",
+    date: "28 avr 2026",
+  },
+  {
+    id: "PD-1230",
+    customer: "Youssef M.",
+    email: "youssef@test.tn",
+    items: 2,
+    total: "155.000",
+    status: "cancelled",
+    payment: "flouci",
+    date: "25 avr 2026",
+  },
 ];
 
-const statusMap: Record<string, { label: string; variant: 'warning' | 'info' | 'success' | 'danger' | 'neutral' }> = {
-  pending: { label: 'En attente', variant: 'warning' },
-  processing: { label: 'Traitement', variant: 'info' },
-  fulfilled: { label: 'Expédié', variant: 'success' },
-  delivered: { label: 'Livré', variant: 'success' },
-  cancelled: { label: 'Annulé', variant: 'danger' },
+const statusMap: Record<
+  string,
+  {
+    label: string;
+    variant: "warning" | "info" | "success" | "danger" | "neutral";
+  }
+> = {
+  pending: { label: "En attente", variant: "warning" },
+  processing: { label: "Traitement", variant: "info" },
+  fulfilled: { label: "Expédié", variant: "success" },
+  delivered: { label: "Livré", variant: "success" },
+  cancelled: { label: "Annulé", variant: "danger" },
 };
 
 const paymentBadge: Record<string, string> = {
-  flouci: '💳 Flouci', konnect: '💳 Konnect', cod: '🚚 COD', mandat: '📨 Mandat',
+  flouci: "💳 Flouci",
+  konnect: "💳 Konnect",
+  cod: "🚚 COD",
+  mandat: "📨 Mandat",
 };
 
 export default function OrdersPage() {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const { data, error, isLoading } = useSWR(
-    `/pd/orders?store_id=store_123`, 
-    api.get
+    `/pd/orders?store_id=store_123`,
+    api.get,
   );
 
   const rawOrders = (data as any)?.orders || orders; // Fallback to static mock for display if api fails
 
-  const filtered = rawOrders.filter((o: any) => {
-    const matchSearch = String(o.id).toLowerCase().includes(search.toLowerCase()) || 
-      (o.customer || o.email || '').toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || o.status === filter;
-    return matchSearch && matchFilter;
-  });
+  // ⚡ Bolt Performance Optimization:
+  // 1. Wrap client-side filtering in useMemo to prevent redundant calculations on re-renders
+  // 2. Hoist search.toLowerCase() outside the filter loop to avoid repeating string allocations
+  const filtered = useMemo(() => {
+    const searchLower = search.toLowerCase();
+
+    return rawOrders.filter((o: any) => {
+      // Early return optimization: check status filter first as it's a simple exact match
+      const matchFilter = filter === "all" || o.status === filter;
+      if (!matchFilter) return false;
+
+      // Skip expensive string operations if search is empty
+      if (!searchLower) return true;
+
+      const matchSearch =
+        String(o.id).toLowerCase().includes(searchLower) ||
+        (o.customer || o.email || "").toLowerCase().includes(searchLower);
+
+      return matchSearch;
+    });
+  }, [rawOrders, search, filter]);
 
   return (
     <div className="animate-fade-in">
-      <h1 style={{ fontSize: 'var(--pd-fs-2xl)', fontWeight: 800, marginBottom: 24 }}>Commandes</h1>
+      <h1
+        style={{
+          fontSize: "var(--pd-fs-2xl)",
+          fontWeight: 800,
+          marginBottom: 24,
+        }}
+      >
+        Commandes
+      </h1>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
-          <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--pd-text-tertiary)' }} />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." style={{
-            width: '100%', padding: '10px 14px 10px 40px', borderRadius: 'var(--pd-radius-md)',
-            border: '1px solid var(--pd-border)', backgroundColor: 'var(--pd-bg-secondary)',
-            color: 'var(--pd-text-primary)', fontSize: 'var(--pd-fs-sm)', outline: 'none',
-          }} />
+      <div
+        style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}
+      >
+        <div style={{ position: "relative", flex: 1, maxWidth: 320 }}>
+          <Search
+            size={18}
+            style={{
+              position: "absolute",
+              left: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--pd-text-tertiary)",
+            }}
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher..."
+            style={{
+              width: "100%",
+              padding: "10px 14px 10px 40px",
+              borderRadius: "var(--pd-radius-md)",
+              border: "1px solid var(--pd-border)",
+              backgroundColor: "var(--pd-bg-secondary)",
+              color: "var(--pd-text-primary)",
+              fontSize: "var(--pd-fs-sm)",
+              outline: "none",
+            }}
+          />
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {['all', 'pending', 'processing', 'fulfilled', 'delivered'].map((f) => (
-            <button key={f} onClick={() => setFilter(f)} style={{
-              padding: '8px 14px', borderRadius: 'var(--pd-radius-md)',
-              fontSize: 'var(--pd-fs-xs)', fontWeight: 600,
-              backgroundColor: filter === f ? 'var(--pd-green-bg)' : 'transparent',
-              color: filter === f ? 'var(--pd-green)' : 'var(--pd-text-secondary)',
-              border: filter === f ? '1px solid var(--pd-green-border)' : '1px solid transparent',
-              transition: 'all var(--pd-transition)',
-            }}>{f === 'all' ? 'Tous' : statusMap[f]?.label || f}</button>
-          ))}
+        <div style={{ display: "flex", gap: 4 }}>
+          {["all", "pending", "processing", "fulfilled", "delivered"].map(
+            (f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "var(--pd-radius-md)",
+                  fontSize: "var(--pd-fs-xs)",
+                  fontWeight: 600,
+                  backgroundColor:
+                    filter === f ? "var(--pd-green-bg)" : "transparent",
+                  color:
+                    filter === f
+                      ? "var(--pd-green)"
+                      : "var(--pd-text-secondary)",
+                  border:
+                    filter === f
+                      ? "1px solid var(--pd-green-border)"
+                      : "1px solid transparent",
+                  transition: "all var(--pd-transition)",
+                }}
+              >
+                {f === "all" ? "Tous" : statusMap[f]?.label || f}
+              </button>
+            ),
+          )}
         </div>
       </div>
 
       <Card padding="0">
         {isLoading ? (
-          <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}>
-            <Loader2 size={32} className="animate-spin" style={{ color: 'var(--pd-text-tertiary)' }} />
+          <div
+            style={{ padding: 40, display: "flex", justifyContent: "center" }}
+          >
+            <Loader2
+              size={32}
+              className="animate-spin"
+              style={{ color: "var(--pd-text-tertiary)" }}
+            />
           </div>
         ) : error && !rawOrders.length ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--pd-red)' }}>
+          <div
+            style={{ padding: 40, textAlign: "center", color: "var(--pd-red)" }}
+          >
             Erreur lors du chargement des commandes
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--pd-text-secondary)' }}>
+          <div
+            style={{
+              padding: 40,
+              textAlign: "center",
+              color: "var(--pd-text-secondary)",
+            }}
+          >
             Aucune commande trouvée.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>{['Commande', 'Client', 'Articles', 'Total', 'Paiement', 'Statut', 'Date', ''].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 'var(--pd-fs-xs)', fontWeight: 600, color: 'var(--pd-text-tertiary)', textTransform: 'uppercase', borderBottom: '1px solid var(--pd-border)' }}>{h}</th>
-                ))}</tr>
+                <tr>
+                  {[
+                    "Commande",
+                    "Client",
+                    "Articles",
+                    "Total",
+                    "Paiement",
+                    "Statut",
+                    "Date",
+                    "",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: "left",
+                        padding: "12px 16px",
+                        fontSize: "var(--pd-fs-xs)",
+                        fontWeight: 600,
+                        color: "var(--pd-text-tertiary)",
+                        textTransform: "uppercase",
+                        borderBottom: "1px solid var(--pd-border)",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
                 {filtered.map((o: any) => (
-                  <tr key={o.id} style={{ borderBottom: '1px solid var(--pd-border)', transition: 'background var(--pd-transition)' }}>
-                    <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: 'var(--pd-fs-sm)' }}>{o.id}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-sm)' }}>{o.customer || o.email}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-sm)' }}>{o.items?.length || o.items}</td>
-                    <td style={{ padding: '14px 16px', fontWeight: 600, fontSize: 'var(--pd-fs-sm)' }}>{Number(o.total || 0).toFixed(3)} TND</td>
-                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)' }}>{paymentBadge[o.payment] || o.payment}</td>
-                    <td style={{ padding: '14px 16px' }}><Badge variant={statusMap[o.status]?.variant || 'neutral'} dot>{statusMap[o.status]?.label || o.status}</Badge></td>
-                    <td style={{ padding: '14px 16px', fontSize: 'var(--pd-fs-xs)', color: 'var(--pd-text-tertiary)' }}>{o.date || new Date().toLocaleDateString('fr-FR')}</td>
-                    <td style={{ padding: '14px 16px' }}><button style={{ color: 'var(--pd-text-secondary)', cursor: 'pointer', border: 'none', background: 'none' }} className="hover-lift"><Eye size={16} /></button></td>
+                  <tr
+                    key={o.id}
+                    style={{
+                      borderBottom: "1px solid var(--pd-border)",
+                      transition: "background var(--pd-transition)",
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        fontWeight: 700,
+                        fontSize: "var(--pd-fs-sm)",
+                      }}
+                    >
+                      {o.id}
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: "var(--pd-fs-sm)",
+                      }}
+                    >
+                      {o.customer || o.email}
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: "var(--pd-fs-sm)",
+                      }}
+                    >
+                      {o.items?.length || o.items}
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        fontWeight: 600,
+                        fontSize: "var(--pd-fs-sm)",
+                      }}
+                    >
+                      {Number(o.total || 0).toFixed(3)} TND
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: "var(--pd-fs-xs)",
+                      }}
+                    >
+                      {paymentBadge[o.payment] || o.payment}
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <Badge
+                        variant={statusMap[o.status]?.variant || "neutral"}
+                        dot
+                      >
+                        {statusMap[o.status]?.label || o.status}
+                      </Badge>
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: "var(--pd-fs-xs)",
+                        color: "var(--pd-text-tertiary)",
+                      }}
+                    >
+                      {o.date || new Date().toLocaleDateString("fr-FR")}
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <button
+                        style={{
+                          color: "var(--pd-text-secondary)",
+                          cursor: "pointer",
+                          border: "none",
+                          background: "none",
+                        }}
+                        className="hover-lift"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
