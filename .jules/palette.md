@@ -1,0 +1,3 @@
+## 2024-06-18 - Input Error Association and Keyboard Accessible Image Uploader
+**Learning:** Adding custom elements (like `div`) as interactive components require explicit `role="button"`, `tabIndex`, and `onKeyDown` to ensure they are accessible for keyboard navigation. We also found that using `useId` and dynamically determining `aria-describedby` based on available hint/error states is an essential pattern for form fields.
+**Action:** Always ensure any interactive non-button element correctly maps to keyboard usage with space/enter, and ensure form error messages are connected back to the inputs using valid unique IDs.
