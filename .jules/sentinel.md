@@ -1,0 +1,4 @@
+## 2025-06-19 - DoS Vulnerability in `crypto.timingSafeEqual` Buffer Length Check
+**Vulnerability:** The `verifyWebhookSignature` function used Node.js's `crypto.timingSafeEqual` to compare the provided signature against the expected one. However, `timingSafeEqual` throws an `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` exception if the two buffers are of different lengths. An attacker could exploit this by sending a webhook signature of an incorrect length, causing an unhandled exception and crashing the server (Denial of Service).
+**Learning:** `crypto.timingSafeEqual` strictly expects buffers of identical byte length and does not handle length mismatches gracefully.
+**Prevention:** Always verify that buffer lengths match (`buffer1.length === buffer2.length`) before calling `crypto.timingSafeEqual`. If the lengths do not match, return `false` early to prevent the exception.
