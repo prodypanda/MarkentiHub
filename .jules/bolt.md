@@ -1,0 +1,3 @@
+## 2026-05-14 - React useMemo array fallback caching
+**Learning:** In Next.js/React components, using inline arrays like `data?.items || []` combined with `.filter()` on every render without `useMemo` leads to unnecessary re-renders and allocations. The allocation is exacerbated when string operations like `.toLowerCase()` are done repeatedly inside the filter loops.
+**Action:** Always wrap derived filtering logic with `useMemo`, hoist invariant loop operations (like `search.toLowerCase()`), and use stable `EMPTY_ARRAY` references for undefined data fallback to preserve referential equality across renders.
