@@ -1,30 +1,30 @@
 // pandamarket/frontend/src/app/layout.tsx
-import type { Metadata } from 'next';
-import '@/styles/globals.css';
+import type { Metadata } from "next";
+import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: 'PandaMarket — Marketplace Tunisien',
-    template: '%s | PandaMarket',
+    default: "PandaMarket — Marketplace Tunisien",
+    template: "%s | PandaMarket",
   },
   description:
-    'PandaMarket est la première plateforme marketplace hybride en Tunisie. Créez votre boutique en ligne gratuite et vendez vos produits à travers le Hub central.',
+    "PandaMarket est la première plateforme marketplace hybride en Tunisie. Créez votre boutique en ligne gratuite et vendez vos produits à travers le Hub central.",
   keywords: [
-    'marketplace tunisie',
-    'boutique en ligne tunisie',
-    'vendre en ligne',
-    'e-commerce tunisien',
-    'pandamarket',
-    'flouci',
-    'konnect',
+    "marketplace tunisie",
+    "boutique en ligne tunisie",
+    "vendre en ligne",
+    "e-commerce tunisien",
+    "pandamarket",
+    "flouci",
+    "konnect",
   ],
-  authors: [{ name: 'PandaMarket' }],
+  authors: [{ name: "PandaMarket" }],
   openGraph: {
-    type: 'website',
-    locale: 'fr_TN',
-    siteName: 'PandaMarket',
-    title: 'PandaMarket — Marketplace Tunisien',
-    description: 'Créez votre boutique en ligne. Vendez sur le Hub central.',
+    type: "website",
+    locale: "fr_TN",
+    siteName: "PandaMarket",
+    title: "PandaMarket — Marketplace Tunisien",
+    description: "Créez votre boutique en ligne. Vendez sur le Hub central.",
   },
   robots: {
     index: true,
@@ -39,9 +39,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
