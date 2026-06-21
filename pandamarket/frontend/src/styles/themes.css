@@ -1,12 +1,12 @@
 /* frontend/src/styles/themes.css */
 /* Base Shared Storefront Variables */
 :root {
-  --store-primary: #16C784;
+  --store-primary: #16c784;
   --store-bg: #ffffff;
   --store-text: #111827;
   --store-border: #e5e7eb;
   --store-radius: 8px;
-  --store-font: 'Inter', sans-serif;
+  --store-font: "Inter", sans-serif;
   --store-header-bg: #ffffff;
   --store-header-text: #111827;
 }
@@ -29,8 +29,8 @@
   --store-radius: 4px;
   --store-header-bg: #1f2937; /* Dark header typical of classic e-commerce */
   --store-header-text: #ffffff;
-  --store-font: 'Georgia', serif; /* Classic font vibe */
-  --store-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --store-font: "Georgia", serif; /* Classic font vibe */
+  --store-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Theme: Modern */
@@ -41,7 +41,7 @@
   --store-radius: 16px; /* Heavy rounding */
   --store-header-bg: rgba(15, 23, 42, 0.8); /* Glassmorphism */
   --store-header-text: #f8fafc;
-  --store-font: 'Outfit', sans-serif;
-  --store-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  --store-font: "Outfit", sans-serif;
+  --store-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
 }
