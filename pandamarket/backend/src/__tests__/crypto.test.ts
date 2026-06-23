@@ -92,6 +92,17 @@ describe('Crypto — Webhook Signatures', () => {
     const isValid = verifyWebhookSignature(tamperedPayload, signature, secret);
     expect(isValid).toBe(false);
   });
+
+  it('should not throw and should reject signature of incorrect length', () => {
+    const payload = JSON.stringify({ amount: 100 });
+    const secret = 'webhook_secret';
+
+    const signature = 'abcd'; // This is 2 bytes, whereas HMAC-SHA256 is 32 bytes
+
+    // Should return false instead of throwing ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH
+    const isValid = verifyWebhookSignature(payload, signature, secret);
+    expect(isValid).toBe(false);
+  });
 });
 
 describe('Crypto — Utility Functions', () => {
