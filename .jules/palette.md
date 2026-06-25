@@ -1,0 +1,3 @@
+## 2026-05-14 - Interactive Div Accessibility
+**Learning:** In the PandaMarket codebase, several custom interactive elements (like the upload trigger `div` in `ImageUploader.tsx`) are built using `div` tags instead of semantic `<button>` elements. This causes screen readers to ignore them and prevents keyboard users from interacting with them.
+**Action:** When working on similar custom interactive elements or encountering clickable `div`s, always ensure they are fully accessible by adding `role="button"`, `tabIndex={0}`, an appropriate `aria-label`, and an `onKeyDown` handler to support 'Enter' or 'Space' key triggers.
