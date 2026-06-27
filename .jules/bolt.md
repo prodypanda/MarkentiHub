@@ -1,0 +1,3 @@
+## 2026-05-14 - Optimize Client-Side Filtering in Dashboard
+**Learning:** In Next.js/React 18 components, large arrays with client-side filtering can cause significant unnecessary work (e.g. string allocations from `toLowerCase()` inside `.filter()`) on every re-render. Additionally, using inline fallbacks like `|| []` defeats memoization caches since it always creates a new array reference when data is undefined.
+**Action:** When filtering lists client-side, always declare a static `const EMPTY_ARRAY = []` fallback outside the component. Wrap the filter logic in a `useMemo` and hoist invariant computations (like `search.toLowerCase()`) out of the loop block to reduce redundant string allocations and avoid unnecessary re-renders.
