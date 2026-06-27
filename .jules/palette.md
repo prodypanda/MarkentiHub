@@ -1,0 +1,3 @@
+## 2026-06-27 - Accessible Forms with React `useId()` and conditional `aria-describedby`
+**Learning:** Hardcoded or string-replaced IDs in React forms (like `label?.toLowerCase().replace(...)`) can lead to duplicate IDs and hydration mismatches during server-side rendering, breaking accessibility references. Additionally, an `aria-describedby` referencing an empty or unrendered ID string causes screen readers to announce an empty reference.
+**Action:** Use React's `useId()` to ensure uniquely generated IDs across the component tree. Conditionally apply `aria-describedby` only when the target description element (error or hint) actually renders.
