@@ -1,6 +1,6 @@
 // pandamarket/frontend/src/app/(dashboard)/dashboard/orders/page.tsx
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import { Search, Filter, Eye, Loader2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -27,6 +27,8 @@ const paymentBadge: Record<string, string> = {
   flouci: '💳 Flouci', konnect: '💳 Konnect', cod: '🚚 COD', mandat: '📨 Mandat',
 };
 
+const EMPTY_ARRAY: any[] = [];
+
 export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -36,14 +38,24 @@ export default function OrdersPage() {
     api.get
   );
 
-  const rawOrders = (data as any)?.orders || orders; // Fallback to static mock for display if api fails
+  const rawOrders = (data as any)?.orders || orders || EMPTY_ARRAY; // Fallback to static mock for display if api fails
 
-  const filtered = rawOrders.filter((o: any) => {
-    const matchSearch = String(o.id).toLowerCase().includes(search.toLowerCase()) || 
-      (o.customer || o.email || '').toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || o.status === filter;
-    return matchSearch && matchFilter;
-  });
+  const filtered = useMemo(() => {
+    if (!rawOrders || rawOrders.length === 0) return EMPTY_ARRAY;
+
+    // ⚡ Bolt: Hoist toLowerCase() outside the loop to prevent O(N) string allocations
+    const searchLower = search.toLowerCase();
+
+    return rawOrders.filter((o: any) => {
+      const matchFilter = filter === 'all' || o.status === filter;
+      if (!matchFilter) return false;
+
+      if (!searchLower) return true;
+
+      return String(o.id).toLowerCase().includes(searchLower) ||
+        (o.customer || o.email || '').toLowerCase().includes(searchLower);
+    });
+  }, [rawOrders, search, filter]);
 
   return (
     <div className="animate-fade-in">
