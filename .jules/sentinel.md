@@ -1,0 +1,4 @@
+## 2026-06-30 - Prevent DoS in Webhook Signature Verification
+**Vulnerability:** `crypto.timingSafeEqual` throws an error (`ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH`) when the given buffers have different byte lengths. This unhandled exception during webhook signature verification allows an attacker to crash the Node.js process (Denial of Service) by supplying a signature of unexpected length.
+**Learning:** Security functions like `timingSafeEqual` that are strict about inputs require careful pre-validation of those inputs before invocation, especially in public-facing or webhook verification endpoints.
+**Prevention:** Always compare buffer lengths manually and return an appropriate failure state (like `false` or throwing a controlled error) before passing user-controlled buffers into `crypto.timingSafeEqual`.
