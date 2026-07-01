@@ -1,0 +1,3 @@
+## 2026-07-01 - Prevent useMemo cache busting with SWR
+**Learning:** When using `useMemo` to filter data fetched via SWR (or similar data fetching libraries), using an inline fallback array like `const data = fetchResult?.data || []` creates a new array reference on every render during loading or error states. This completely defeats `useMemo` because the dependency array changes on every render, causing the expensive filtering logic to run unnecessarily.
+**Action:** Always define a stable `const EMPTY_ARRAY = []` outside the component and use it as the fallback (`const data = fetchResult?.data || EMPTY_ARRAY`) to maintain referential equality and preserve memoization benefits.
