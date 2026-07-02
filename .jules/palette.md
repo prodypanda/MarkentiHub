@@ -1,0 +1,3 @@
+## 2026-05-13 - Accessible Input IDs and ARIA attributes
+**Learning:** Manual string-based ID generation (like `label?.toLowerCase().replace(/\s+/g, '-')`) can cause React 18 hydration mismatches when rendered on both server and client. Also, applying `aria-describedby` statically without checking if the target element exists causes screen readers to announce empty references.
+**Action:** Use React's `useId()` hook to generate deterministic unique IDs, avoiding hydration issues. Conditionally set `aria-describedby` only when the associated error or hint text is actually rendered to provide accurate accessibility cues.
