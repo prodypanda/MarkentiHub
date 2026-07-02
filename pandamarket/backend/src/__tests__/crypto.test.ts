@@ -92,6 +92,17 @@ describe('Crypto — Webhook Signatures', () => {
     const isValid = verifyWebhookSignature(tamperedPayload, signature, secret);
     expect(isValid).toBe(false);
   });
+
+  it('should reject a signature of incorrect length without throwing an error', () => {
+    const payload = JSON.stringify({ amount: 100 });
+    const secret = 'webhook_secret';
+
+    const shortSignature = 'abc'; // Invalid length for hex representation of SHA-256
+    expect(() => verifyWebhookSignature(payload, shortSignature, secret)).not.toThrow();
+
+    const isValid = verifyWebhookSignature(payload, shortSignature, secret);
+    expect(isValid).toBe(false);
+  });
 });
 
 describe('Crypto — Utility Functions', () => {
