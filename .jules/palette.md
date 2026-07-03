@@ -1,0 +1,3 @@
+## 2026-07-03 - Accessible custom image upload trigger
+**Learning:** Custom div-based buttons acting as file upload triggers must have `role="button"`, `tabIndex={0}`, an explicit `aria-label`, and an `onKeyDown` handler (listening for `Enter` and `Space`) to ensure keyboard accessibility. Icon-only buttons used for item deletion need explicit `aria-label` and `title` to be screen-reader friendly and clearly communicative.
+**Action:** When implementing custom interactive elements, always ensure they are fully navigable via keyboard by applying the proper ARIA roles and handlers, and make sure all icon-only buttons have readable screen-reader labels.
