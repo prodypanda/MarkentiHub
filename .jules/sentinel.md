@@ -1,0 +1,4 @@
+## 2025-02-23 - Buffer Length Mismatch DoS in crypto.timingSafeEqual
+**Vulnerability:** Calling `crypto.timingSafeEqual` with buffers of different lengths throws a hard `ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH` error instead of returning `false`. In `verifyWebhookSignature`, supplying a signature of unexpected length caused an unhandled exception, creating a Denial of Service (DoS) vulnerability.
+**Learning:** `crypto.timingSafeEqual` is strictly designed for comparing buffers of the exact same length to prevent timing attacks. It intentionally throws an error if lengths differ, shifting the responsibility of length checking to the developer.
+**Prevention:** Always compare `Buffer.length` properties before calling `crypto.timingSafeEqual`. If the lengths differ, safely return `false` immediately to avoid crashes.
