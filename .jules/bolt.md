@@ -1,0 +1,3 @@
+## 2026-07-04 - Client-Side Filtering Optimization
+**Learning:** In Next.js/React applications, when performing client-side filtering on data (like `array.filter(...)`), if the result is computed directly in the component body, it causes cache busting and forces child components or loops to re-render, especially during SWR loading states where the array might fallback to an inline `[]`.
+**Action:** Always wrap client-side filtering operations (especially in dashboard tables) with `useMemo`. Hoist invariant operations like `search.toLowerCase()` outside the `.filter()` loop to prevent redundant string allocations. Also, use a stable `const EMPTY_ARRAY = []` defined outside the component instead of inline `[]` for data fallbacks to maintain referential equality.
