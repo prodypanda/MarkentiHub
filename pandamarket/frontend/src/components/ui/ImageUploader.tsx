@@ -107,6 +107,8 @@ export default function ImageUploader({
             <button
               type="button"
               onClick={() => removeImage(index)}
+              aria-label="Remove Image"
+              title="Remove Image"
               style={{
                 position: 'absolute',
                 top: 6,
@@ -131,6 +133,15 @@ export default function ImageUploader({
         {images.length < maxImages && (
           <div
             onClick={() => !uploading && fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !uploading) {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload Image"
             style={{
               width: 120,
               height: 120,
