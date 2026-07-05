@@ -1,0 +1,3 @@
+## 2026-05-13 - Conditional aria-describedby and useId() in Input component
+**Learning:** Using `Math.random()` or manual string replacement for IDs in React components (like inputs) can cause SSR hydration mismatches. Additionally, assigning `aria-describedby` to an empty element or an ID that doesn't exist yet creates noise for screen readers.
+**Action:** Use React 18's `useId()` for generating unique IDs for inputs and their labels. Conditionally apply `aria-describedby` only if the corresponding error or hint element actually renders, ensuring screen readers receive accurate and relevant associations.
