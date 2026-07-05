@@ -92,6 +92,19 @@ describe('Crypto — Webhook Signatures', () => {
     const isValid = verifyWebhookSignature(tamperedPayload, signature, secret);
     expect(isValid).toBe(false);
   });
+
+  it('should handle signatures of different lengths without throwing', () => {
+    const payload = JSON.stringify({ amount: 100 });
+    const secret = 'webhook_secret';
+
+    // The expected signature is 64 hex chars (32 bytes).
+    // Using a signature of a different length (e.g. 62 hex chars, 31 bytes).
+    const invalidLengthSignature = 'a'.repeat(62);
+
+    // This should just return false and NOT throw ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH
+    const isValid = verifyWebhookSignature(payload, invalidLengthSignature, secret);
+    expect(isValid).toBe(false);
+  });
 });
 
 describe('Crypto — Utility Functions', () => {
