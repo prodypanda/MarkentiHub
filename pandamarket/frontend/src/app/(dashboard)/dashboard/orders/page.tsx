@@ -1,6 +1,6 @@
 // pandamarket/frontend/src/app/(dashboard)/dashboard/orders/page.tsx
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import { Search, Filter, Eye, Loader2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -14,6 +14,8 @@ const orders = [
   { id: 'PD-1231', customer: 'Nour H.', email: 'nour@test.tn', items: 1, total: '67.300', status: 'delivered', payment: 'mandat', date: '28 avr 2026' },
   { id: 'PD-1230', customer: 'Youssef M.', email: 'youssef@test.tn', items: 2, total: '155.000', status: 'cancelled', payment: 'flouci', date: '25 avr 2026' },
 ];
+
+const EMPTY_ARRAY: any[] = []; // Stable reference for empty fallback
 
 const statusMap: Record<string, { label: string; variant: 'warning' | 'info' | 'success' | 'danger' | 'neutral' }> = {
   pending: { label: 'En attente', variant: 'warning' },
@@ -36,14 +38,19 @@ export default function OrdersPage() {
     api.get
   );
 
-  const rawOrders = (data as any)?.orders || orders; // Fallback to static mock for display if api fails
+  const rawOrders = (data as any)?.orders || (error ? EMPTY_ARRAY : orders); // Fallback to static mock for display if api fails/loading, or EMPTY_ARRAY if errored
 
-  const filtered = rawOrders.filter((o: any) => {
-    const matchSearch = String(o.id).toLowerCase().includes(search.toLowerCase()) || 
-      (o.customer || o.email || '').toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || o.status === filter;
-    return matchSearch && matchFilter;
-  });
+  // Memoize filtered orders to prevent unnecessary recalculations on re-renders
+  const filtered = useMemo(() => {
+    // Hoist search.toLowerCase() to avoid redundant string allocations per item
+    const searchLower = search.toLowerCase();
+    return rawOrders.filter((o: any) => {
+      const matchSearch = String(o.id).toLowerCase().includes(searchLower) ||
+        (o.customer || o.email || '').toLowerCase().includes(searchLower);
+      const matchFilter = filter === 'all' || o.status === filter;
+      return matchSearch && matchFilter;
+    });
+  }, [rawOrders, search, filter]);
 
   return (
     <div className="animate-fade-in">

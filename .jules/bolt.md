@@ -1,0 +1,3 @@
+## 2026-07-05 - Client-side Filtering Memoization
+**Learning:** React re-renders can be surprisingly expensive in client-side filtering (like dashboard lists) if `useMemo` isn't used to wrap `.filter()`. Recreating static fallback arrays (e.g. `data?.items || []`) inline busts `useMemo` cache by generating new references on every render. Redundant `String.toLowerCase()` inside a loop allocation also wastes CPU cycles.
+**Action:** Always wrap client-side filtering logic with `useMemo`, hoist invariant operations like `search.toLowerCase()` outside the `.filter()` callback, and replace inline `|| []` with a module-level constant like `EMPTY_ARRAY` to maintain referential equality during SWR loading/error states.
